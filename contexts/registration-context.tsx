@@ -128,34 +128,45 @@ function calculateCompletion(reg: RegistrationData): number {
   let filled = 0
 
   // Data Pribadi (20%)
-  const pribadiFields = Object.values(reg.dataPribadi).filter((v) => v !== "")
+  const dataPribadi = reg.dataPribadi || {}
+  const pribadiValues = Object.values(dataPribadi)
+  const pribadiFields = pribadiValues.filter((v) => v !== "" && v != null)
   total += 20
-  filled += (pribadiFields.length / Object.keys(reg.dataPribadi).length) * 20
+  const pribadiTotal = pribadiValues.length || 1
+  filled += (pribadiFields.length / pribadiTotal) * 20
 
   // Data Orang Tua (15%)
-  const ortuFields = Object.values(reg.dataOrangTua).filter((v) => v !== "" && v !== undefined)
-  const requiredOrtuFields = Object.keys(reg.dataOrangTua).filter((k) => !k.includes("Wali"))
+  const dataOrangTua = reg.dataOrangTua || {}
+  const ortuFields = Object.values(dataOrangTua).filter((v) => v !== "" && v !== undefined && v !== null)
+  const requiredOrtuFields = Object.keys(dataOrangTua).filter((k) => !k.includes("Wali"))
   total += 15
-  filled += (ortuFields.length / requiredOrtuFields.length) * 15
+  const ortuTotal = requiredOrtuFields.length || 1
+  filled += (ortuFields.length / ortuTotal) * 15
 
   // Data Sekolah (15%)
-  const sekolahFields = Object.values(reg.dataSekolah).filter((v) => v !== "")
+  const dataSekolah = reg.dataSekolah || {}
+  const sekolahValues = Object.values(dataSekolah)
+  const sekolahFields = sekolahValues.filter((v) => v !== "" && v != null)
   total += 15
-  filled += (sekolahFields.length / Object.keys(reg.dataSekolah).length) * 15
+  const sekolahTotal = sekolahValues.length || 1
+  filled += (sekolahFields.length / sekolahTotal) * 15
 
   // Nilai Rapor (10%)
+  const nilaiRapor = reg.nilaiRapor || []
   total += 10
-  filled += reg.nilaiRapor.length >= 5 ? 10 : (reg.nilaiRapor.length / 5) * 10
+  filled += nilaiRapor.length >= 5 ? 10 : (nilaiRapor.length / 5) * 10
 
   // Documents (20%)
-  const requiredDocs = reg.documents.filter((d) => d.required)
+  const documents = reg.documents || []
+  const requiredDocs = documents.filter((d) => d.required)
   const uploadedDocs = requiredDocs.filter((d) => d.file)
   total += 20
-  filled += (uploadedDocs.length / requiredDocs.length) * 20
+  filled += requiredDocs.length > 0 ? (uploadedDocs.length / requiredDocs.length) * 20 : 0
 
   // Pilihan Prodi (10%)
+  const pilihanProdi = reg.pilihanProdi || []
   total += 10
-  filled += reg.pilihanProdi.length >= 1 ? 10 : 0
+  filled += pilihanProdi.length >= 1 ? 10 : 0
 
   // Pembayaran (10%)
   total += 10
@@ -193,6 +204,17 @@ export function RegistrationProvider({ children }: { children: ReactNode }) {
 
         if (data) {
           // Map data dari format DB PostgreSQL ke model data TypeScript RegistrationData
+          const storedDocuments: DocumentUpload[] = Array.isArray(data.documents) && data.documents.length > 0
+            ? data.documents as DocumentUpload[]
+            : []
+
+          // Gabungkan dengan INITIAL_DOCUMENTS agar semua tipe dokumen selalu ada,
+          // sambil mempertahankan file yang sudah diupload sebelumnya
+          const mergedDocuments: DocumentUpload[] = INITIAL_DOCUMENTS.map((initDoc) => {
+            const existing = storedDocuments.find((d) => d.type === initDoc.type)
+            return existing ? { ...initDoc, ...existing } : initDoc
+          })
+
           const loadedReg: RegistrationData = {
             userId: data.user_id,
             noPendaftaran: data.no_pendaftaran || undefined,
@@ -202,7 +224,7 @@ export function RegistrationProvider({ children }: { children: ReactNode }) {
             dataSekolah: data.data_sekolah as any,
             nilaiRapor: data.nilai_rapor as any,
             prestasi: data.prestasi as any,
-            documents: data.documents as any,
+            documents: mergedDocuments,
             pilihanProdi: data.pilihan_prodi as any,
             pembayaran: data.pembayaran as any,
             statusHistory: data.status_history as any,
@@ -215,21 +237,30 @@ export function RegistrationProvider({ children }: { children: ReactNode }) {
           // Jika belum ada di Supabase, coba periksa dari cache lokal (localStorage)
           const stored = getStorageItem<RegistrationData>(`${STORAGE_KEYS.REGISTRATION}_${user.id}`)
           if (stored) {
-            setRegistration(stored)
-            // Sinkronisasi data lokal ke database online Supabase
+            // Merge dokumen dari cache dengan INITIAL_DOCUMENTS agar tidak kosong
+            const cachedDocs = Array.isArray(stored.documents) && stored.documents.length > 0
+              ? stored.documents
+              : []
+            const mergedCachedDocs: DocumentUpload[] = INITIAL_DOCUMENTS.map((initDoc) => {
+              const existing = cachedDocs.find((d) => d.type === initDoc.type)
+              return existing ? { ...initDoc, ...existing } : initDoc
+            })
+            const storedWithMergedDocs = { ...stored, documents: mergedCachedDocs }
+            setRegistration(storedWithMergedDocs)
+            // Sinkronisasi data lokal (sudah ter-merge) ke database online Supabase
             await supabase.from("registrations").upsert({
               user_id: user.id,
-              no_pendaftaran: stored.noPendaftaran || null,
-              status: stored.status,
-              data_pribadi: stored.dataPribadi,
-              data_orang_tua: stored.dataOrangTua,
-              data_sekolah: stored.dataSekolah,
-              nilai_rapor: stored.nilaiRapor,
-              prestasi: stored.prestasi,
-              documents: stored.documents,
-              pilihan_prodi: stored.pilihanProdi,
-              pembayaran: stored.pembayaran || null,
-              status_history: stored.statusHistory,
+              no_pendaftaran: storedWithMergedDocs.noPendaftaran || null,
+              status: storedWithMergedDocs.status,
+              data_pribadi: storedWithMergedDocs.dataPribadi,
+              data_orang_tua: storedWithMergedDocs.dataOrangTua,
+              data_sekolah: storedWithMergedDocs.dataSekolah,
+              nilai_rapor: storedWithMergedDocs.nilaiRapor,
+              prestasi: storedWithMergedDocs.prestasi,
+              documents: storedWithMergedDocs.documents,
+              pilihan_prodi: storedWithMergedDocs.pilihanProdi,
+              pembayaran: storedWithMergedDocs.pembayaran || null,
+              status_history: storedWithMergedDocs.statusHistory,
             }, { onConflict: "user_id" })
           } else {
             // Jika data benar-benar baru, buat inisialisasi awal
@@ -285,6 +316,13 @@ export function RegistrationProvider({ children }: { children: ReactNode }) {
           console.log("Realtime registration update received for student:", payload)
           if (payload.new) {
             const data = payload.new as any
+            const storedDocs: DocumentUpload[] = Array.isArray(data.documents) && data.documents.length > 0
+              ? data.documents as DocumentUpload[]
+              : []
+            const mergedDocs: DocumentUpload[] = INITIAL_DOCUMENTS.map((initDoc) => {
+              const existing = storedDocs.find((d) => d.type === initDoc.type)
+              return existing ? { ...initDoc, ...existing } : initDoc
+            })
             const loadedReg: RegistrationData = {
               userId: data.user_id,
               noPendaftaran: data.no_pendaftaran || undefined,
@@ -294,7 +332,7 @@ export function RegistrationProvider({ children }: { children: ReactNode }) {
               dataSekolah: data.data_sekolah as any,
               nilaiRapor: data.nilai_rapor as any,
               prestasi: data.prestasi as any,
-              documents: data.documents as any,
+              documents: mergedDocs,
               pilihanProdi: data.pilihan_prodi as any,
               pembayaran: data.pembayaran as any,
               statusHistory: data.status_history as any,

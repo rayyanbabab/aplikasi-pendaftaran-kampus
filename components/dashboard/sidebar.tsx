@@ -15,9 +15,7 @@ import {
   ChevronRight,
   Menu,
   X,
-  MessageSquare,
   BarChart3,
-  Shield,
 } from "lucide-react"
 import { useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
@@ -34,9 +32,7 @@ const navItems = [
   { href: "/dashboard/pembayaran", label: "Pembayaran", icon: CreditCard },
   { href: "/dashboard/status", label: "Status Pendaftaran", icon: ClipboardCheck },
   { href: "/dashboard/cetak", label: "Cetak Dokumen", icon: Printer },
-  { href: "/chatbot", label: "Chatbot PMB", icon: MessageSquare },
   { href: "/rekomendasi", label: "Rekomendasi Prodi", icon: BarChart3 },
-  { href: "/admin", label: "Admin Panel", icon: Shield },
 ]
 
 export function DashboardSidebar() {

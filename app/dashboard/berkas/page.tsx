@@ -11,7 +11,8 @@ export default function BerkasPage() {
   if (!registration) return null
 
   // Calculate completion for documents
-  const requiredDocs = registration.documents.filter((d) => d.required)
+  const docs = registration.documents || []
+  const requiredDocs = docs.filter((d) => d.required)
   const uploadedDocs = requiredDocs.filter((d) => d.file && d.file.status !== "rejected")
   const documentProgress = requiredDocs.length > 0 ? (uploadedDocs.length / requiredDocs.length) * 100 : 0
 
@@ -50,7 +51,7 @@ export default function BerkasPage() {
           <p className="text-sm text-muted-foreground">Semua dokumen dibawah ini harus diupload</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {registration.documents
+          {docs
             .filter((doc) => doc.required)
             .map((doc) => (
               <DocumentUploadCard key={doc.type} document={doc} />
@@ -67,7 +68,7 @@ export default function BerkasPage() {
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {registration.documents
+          {docs
             .filter((doc) => !doc.required)
             .map((doc) => (
               <DocumentUploadCard key={doc.type} document={doc} />

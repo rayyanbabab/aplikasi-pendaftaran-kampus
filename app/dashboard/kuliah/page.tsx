@@ -33,13 +33,16 @@ export default function KuliahPage() {
 
   if (!registration) return null
 
+  // Guard: pilihanProdi bisa null dari Supabase
+  const pilihanProdi = registration.pilihanProdi || []
+
   const filteredProdi = selectedFakultas
     ? PRODI_LIST.filter((p) => p.fakultasId === selectedFakultas)
     : []
 
   const handleOpenDialog = (index?: number) => {
     if (index !== undefined) {
-      const pilihan = registration.pilihanProdi[index]
+      const pilihan = pilihanProdi[index]
       setEditingIndex(index)
       setSelectedFakultas(pilihan.fakultasId)
       setSelectedProdi(pilihan.prodiId)
@@ -58,10 +61,10 @@ export default function KuliahPage() {
   const handleSave = () => {
     if (!selectedFakultas || !selectedProdi || !selectedGelombang) return
 
-    const urutan = editingIndex !== null ? (editingIndex + 1) : (registration.pilihanProdi.length + 1) as 1 | 2 | 3
+    const urutan = editingIndex !== null ? (editingIndex + 1) : (pilihanProdi.length + 1) as 1 | 2 | 3
     
     // Check if already selected (allow editing same index)
-    const isDuplicate = registration.pilihanProdi.some(
+    const isDuplicate = pilihanProdi.some(
       (p, idx) => p.prodiId === selectedProdi && idx !== editingIndex
     )
 
@@ -70,7 +73,7 @@ export default function KuliahPage() {
       return
     }
 
-    if (registration.pilihanProdi.length >= 3 && editingIndex === null) {
+    if (pilihanProdi.length >= 3 && editingIndex === null) {
       alert("Maksimal 3 pilihan program studi")
       return
     }
@@ -84,15 +87,15 @@ export default function KuliahPage() {
     }
 
     const updated = editingIndex !== null
-      ? registration.pilihanProdi.map((p, idx) => (idx === editingIndex ? newPilihan : p))
-      : [...registration.pilihanProdi, newPilihan]
+      ? pilihanProdi.map((p, idx) => (idx === editingIndex ? newPilihan : p))
+      : [...pilihanProdi, newPilihan]
 
     setPilihanProdi(updated)
     setIsDialogOpen(false)
   }
 
   const handleRemove = (index: number) => {
-    const updated = registration.pilihanProdi.filter((_, idx) => idx !== index)
+    const updated = pilihanProdi.filter((_, idx) => idx !== index)
     setPilihanProdi(updated)
   }
 
@@ -116,11 +119,11 @@ export default function KuliahPage() {
       </Alert>
 
       {/* Current Selections */}
-      {registration.pilihanProdi.length > 0 && (
+      {pilihanProdi.length > 0 && (
         <div className="space-y-3">
           <h2 className="font-semibold">Pilihan Anda</h2>
           <div className="space-y-2">
-            {registration.pilihanProdi.map((pilihan, idx) => {
+            {pilihanProdi.map((pilihan, idx) => {
               const fakultas = FAKULTAS_LIST.find((f) => f.id === pilihan.fakultasId)
               const prodi = PRODI_LIST.find((p) => p.id === pilihan.prodiId)
               const gelombang = GELOMBANG_LIST.find((g) => g.id === pilihan.gelombang)
@@ -182,7 +185,7 @@ export default function KuliahPage() {
         <DialogTrigger asChild>
           <Button
             onClick={() => handleOpenDialog()}
-            disabled={registration.pilihanProdi.length >= 3 && editingIndex === null}
+            disabled={pilihanProdi.length >= 3 && editingIndex === null}
             className="w-full sm:w-auto"
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -340,7 +343,7 @@ export default function KuliahPage() {
       </Dialog>
 
       {/* Empty State */}
-      {registration.pilihanProdi.length === 0 && (
+      {pilihanProdi.length === 0 && (
         <Card>
           <CardContent className="py-12">
             <div className="text-center space-y-3">

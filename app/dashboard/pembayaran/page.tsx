@@ -41,8 +41,9 @@ export default function PembayaranPage() {
   if (!registration) return null
 
   // Get selected program info
-  const selectedProdi = registration.pilihanProdi[0]
-    ? PRODI_LIST.find((p) => p.id === registration.pilihanProdi[0].prodiId)
+  const pilihanProdi = registration.pilihanProdi || []
+  const selectedProdi = pilihanProdi[0]
+    ? PRODI_LIST.find((p) => p.id === pilihanProdi[0].prodiId)
     : null
 
   const amount = selectedProdi?.biayaRegistrasi || 0

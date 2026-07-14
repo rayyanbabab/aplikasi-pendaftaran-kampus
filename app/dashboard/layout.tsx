@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { AuthProvider, useAuth } from "@/contexts/auth-context"
 import { RegistrationProvider } from "@/contexts/registration-context"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
+import { ChatbotWidget } from "@/components/dashboard/chatbot-widget"
 import { Spinner } from "@/components/ui/spinner"
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
@@ -44,6 +45,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             {children}
           </div>
         </main>
+        <ChatbotWidget />
       </div>
     </RegistrationProvider>
   )

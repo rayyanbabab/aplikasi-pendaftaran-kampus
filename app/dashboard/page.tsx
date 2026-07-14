@@ -49,9 +49,10 @@ export default function DashboardPage() {
   // Calculate section completion
   const getDocumentProgress = () => {
     if (!registration) return 0
-    const requiredDocs = registration.documents.filter((d) => d.required)
+    const docs = registration.documents || []
+    const requiredDocs = docs.filter((d) => d.required)
     const uploadedDocs = requiredDocs.filter((d) => d.file)
-    return Math.round((uploadedDocs.length / requiredDocs.length) * 100)
+    return requiredDocs.length > 0 ? Math.round((uploadedDocs.length / requiredDocs.length) * 100) : 0
   }
 
   return (
@@ -161,14 +162,14 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Activity / Timeline */}
-      {registration && registration.statusHistory.length > 0 && (
+      {registration && (registration.statusHistory || []).length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Riwayat Status</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {registration.statusHistory.slice(-5).reverse().map((item, index) => {
+              {(registration.statusHistory || []).slice(-5).reverse().map((item, index) => {
                 const config = statusConfig[item.status]
                 return (
                   <div key={index} className="flex items-start gap-3">

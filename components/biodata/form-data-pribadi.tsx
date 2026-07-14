@@ -28,7 +28,7 @@ export function FormDataPribadi() {
             <Label htmlFor="namaLengkap">Nama Lengkap (Sesuai KTP)</Label>
             <Input
               id="namaLengkap"
-              value={data.namaLengkap}
+              value={data.namaLengkap ?? ""}
               onChange={(e) => updateDataPribadi({ namaLengkap: e.target.value })}
               placeholder="Masukkan nama lengkap"
             />
@@ -37,7 +37,7 @@ export function FormDataPribadi() {
             <Label htmlFor="nik">NIK (Nomor Induk Kependudukan)</Label>
             <Input
               id="nik"
-              value={data.nik}
+              value={data.nik ?? ""}
               onChange={(e) => updateDataPribadi({ nik: e.target.value.replace(/\D/g, "").slice(0, 16) })}
               placeholder="16 digit NIK"
               maxLength={16}
@@ -51,7 +51,7 @@ export function FormDataPribadi() {
             <Label htmlFor="tempatLahir">Tempat Lahir</Label>
             <Input
               id="tempatLahir"
-              value={data.tempatLahir}
+              value={data.tempatLahir ?? ""}
               onChange={(e) => updateDataPribadi({ tempatLahir: e.target.value })}
               placeholder="Kota tempat lahir"
             />
@@ -61,7 +61,7 @@ export function FormDataPribadi() {
             <Input
               id="tanggalLahir"
               type="date"
-              value={data.tanggalLahir}
+              value={data.tanggalLahir ?? ""}
               onChange={(e) => updateDataPribadi({ tanggalLahir: e.target.value })}
             />
           </div>
@@ -72,7 +72,7 @@ export function FormDataPribadi() {
           <div className="space-y-2">
             <Label>Jenis Kelamin</Label>
             <Select
-              value={data.jenisKelamin}
+              value={data.jenisKelamin ?? ""}
               onValueChange={(value: "laki-laki" | "perempuan") => updateDataPribadi({ jenisKelamin: value })}
             >
               <SelectTrigger>
@@ -87,7 +87,7 @@ export function FormDataPribadi() {
           <div className="space-y-2">
             <Label>Agama</Label>
             <Select
-              value={data.agama}
+              value={data.agama ?? ""}
               onValueChange={(value) => updateDataPribadi({ agama: value })}
             >
               <SelectTrigger>
@@ -109,7 +109,7 @@ export function FormDataPribadi() {
           <Label htmlFor="kewarganegaraan">Kewarganegaraan</Label>
           <Input
             id="kewarganegaraan"
-            value={data.kewarganegaraan}
+            value={data.kewarganegaraan ?? ""}
             onChange={(e) => updateDataPribadi({ kewarganegaraan: e.target.value })}
             placeholder="Indonesia"
           />
@@ -120,7 +120,7 @@ export function FormDataPribadi() {
           <Label htmlFor="alamat">Alamat Lengkap</Label>
           <Textarea
             id="alamat"
-            value={data.alamat}
+            value={data.alamat ?? ""}
             onChange={(e) => updateDataPribadi({ alamat: e.target.value })}
             placeholder="Nama jalan, nomor rumah, gang, dsb."
             rows={3}
@@ -133,7 +133,7 @@ export function FormDataPribadi() {
             <Label htmlFor="rt">RT</Label>
             <Input
               id="rt"
-              value={data.rt}
+              value={data.rt ?? ""}
               onChange={(e) => updateDataPribadi({ rt: e.target.value.replace(/\D/g, "").slice(0, 3) })}
               placeholder="001"
               maxLength={3}
@@ -143,7 +143,7 @@ export function FormDataPribadi() {
             <Label htmlFor="rw">RW</Label>
             <Input
               id="rw"
-              value={data.rw}
+              value={data.rw ?? ""}
               onChange={(e) => updateDataPribadi({ rw: e.target.value.replace(/\D/g, "").slice(0, 3) })}
               placeholder="001"
               maxLength={3}
@@ -153,7 +153,7 @@ export function FormDataPribadi() {
             <Label htmlFor="kodePos">Kode Pos</Label>
             <Input
               id="kodePos"
-              value={data.kodePos}
+              value={data.kodePos ?? ""}
               onChange={(e) => updateDataPribadi({ kodePos: e.target.value.replace(/\D/g, "").slice(0, 5) })}
               placeholder="12345"
               maxLength={5}
@@ -167,7 +167,7 @@ export function FormDataPribadi() {
             <Label htmlFor="kelurahan">Kelurahan/Desa</Label>
             <Input
               id="kelurahan"
-              value={data.kelurahan}
+              value={data.kelurahan ?? ""}
               onChange={(e) => updateDataPribadi({ kelurahan: e.target.value })}
               placeholder="Nama kelurahan/desa"
             />
@@ -176,7 +176,7 @@ export function FormDataPribadi() {
             <Label htmlFor="kecamatan">Kecamatan</Label>
             <Input
               id="kecamatan"
-              value={data.kecamatan}
+              value={data.kecamatan ?? ""}
               onChange={(e) => updateDataPribadi({ kecamatan: e.target.value })}
               placeholder="Nama kecamatan"
             />
@@ -189,7 +189,7 @@ export function FormDataPribadi() {
             <Label htmlFor="kabupaten">Kabupaten/Kota</Label>
             <Input
               id="kabupaten"
-              value={data.kabupaten}
+              value={data.kabupaten ?? ""}
               onChange={(e) => updateDataPribadi({ kabupaten: e.target.value })}
               placeholder="Nama kabupaten/kota"
             />
@@ -198,7 +198,7 @@ export function FormDataPribadi() {
             <Label htmlFor="provinsi">Provinsi</Label>
             <Input
               id="provinsi"
-              value={data.provinsi}
+              value={data.provinsi ?? ""}
               onChange={(e) => updateDataPribadi({ provinsi: e.target.value })}
               placeholder="Nama provinsi"
             />
@@ -211,7 +211,7 @@ export function FormDataPribadi() {
             <Label htmlFor="noHp">No. HP / WhatsApp</Label>
             <Input
               id="noHp"
-              value={data.noHp}
+              value={data.noHp ?? ""}
               onChange={(e) => updateDataPribadi({ noHp: e.target.value })}
               placeholder="08xxxxxxxxxx"
             />
@@ -221,7 +221,7 @@ export function FormDataPribadi() {
             <Input
               id="email"
               type="email"
-              value={data.email}
+              value={data.email ?? ""}
               onChange={(e) => updateDataPribadi({ email: e.target.value })}
               placeholder="nama@email.com"
             />

@@ -212,7 +212,7 @@ export default function StatusPage() {
       </Card>
 
       {/* Status History */}
-      {registration.statusHistory.length > 0 && (
+      {(registration.statusHistory || []).length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Riwayat Status</CardTitle>
@@ -220,7 +220,7 @@ export default function StatusPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {registration.statusHistory
+              {(registration.statusHistory || [])
                 .slice()
                 .reverse()
                 .map((history, index) => {

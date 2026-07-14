@@ -99,7 +99,8 @@ export function NilaiRaporList() {
     setFormData((prev) => ({ ...prev, [field]: numValue }))
   }
 
-  const usedSemesters = registration.nilaiRapor.map((n) => n.semester)
+  const nilaiRapor = registration.nilaiRapor || []
+  const usedSemesters = nilaiRapor.map((n) => n.semester)
   const availableSemesters = SEMESTERS.filter((s) => !usedSemesters.includes(s) || s === formData.semester)
 
   return (
@@ -111,7 +112,7 @@ export function NilaiRaporList() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => handleOpenDialog()} disabled={registration.nilaiRapor.length >= 5}>
+            <Button onClick={() => handleOpenDialog()} disabled={nilaiRapor.length >= 5}>
               <Plus className="mr-2 h-4 w-4" />
               Tambah Nilai
             </Button>
@@ -217,7 +218,7 @@ export function NilaiRaporList() {
         </Dialog>
       </CardHeader>
       <CardContent>
-        {registration.nilaiRapor.length === 0 ? (
+        {nilaiRapor.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12 text-center">
             <p className="text-muted-foreground">Belum ada nilai rapor yang diinput</p>
             <p className="text-sm text-muted-foreground">Klik tombol &quot;Tambah Nilai&quot; untuk memulai</p>
@@ -238,7 +239,7 @@ export function NilaiRaporList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {registration.nilaiRapor.map((nilai) => (
+                {nilaiRapor.map((nilai) => (
                   <TableRow key={nilai.id}>
                     <TableCell className="font-medium">{nilai.semester}</TableCell>
                     <TableCell className="text-center">{nilai.matematika ?? "-"}</TableCell>

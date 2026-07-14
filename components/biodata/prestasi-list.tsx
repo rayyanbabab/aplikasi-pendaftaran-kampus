@@ -189,7 +189,7 @@ export function PrestasiList() {
         </Dialog>
       </CardHeader>
       <CardContent>
-        {registration.prestasi.length === 0 ? (
+        {(registration.prestasi || []).length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12 text-center">
             <Trophy className="mb-2 h-10 w-10 text-muted-foreground/50" />
             <p className="text-muted-foreground">Belum ada prestasi yang ditambahkan</p>
@@ -197,7 +197,7 @@ export function PrestasiList() {
           </div>
         ) : (
           <div className="space-y-3">
-            {registration.prestasi.map((prestasi) => {
+            {(registration.prestasi || []).map((prestasi) => {
               const tingkatInfo = TINGKAT_LIST.find((t) => t.value === prestasi.tingkat)
               return (
                 <div
