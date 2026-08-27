@@ -152,9 +152,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const verifyWithSupabase = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
         if (cancelled) return
+
+        // Tangani refresh token kedaluwarsa — bersihkan sesi yang tidak valid
+        if (sessionError) {
+          const msg = sessionError.message || ""
+          if (
+            msg.includes("Refresh Token Not Found") ||
+            msg.includes("Invalid Refresh Token") ||
+            msg.includes("refresh_token_not_found")
+          ) {
+            console.warn("[Auth] Refresh token kedaluwarsa, sesi dibersihkan.")
+            await supabase.auth.signOut()
+            setUser(null)
+            removeStorageItem(STORAGE_KEYS.USER)
+            removeStorageItem(STORAGE_KEYS.SESSION)
+            return
+          }
+          // Error sesi lainnya — biarkan localStorage tetap (offline tolerance)
+          console.warn("[Auth] Gagal mendapatkan sesi:", msg)
+          return
+        }
 
         if (session) {
           const profile = await fetchProfile(session.user.id)
@@ -176,9 +196,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           removeStorageItem(STORAGE_KEYS.USER)
           removeStorageItem(STORAGE_KEYS.SESSION)
         }
-      } catch (err) {
-        console.error("[Auth] Gagal verifikasi sesi Supabase:", err)
-        // Jika gagal cek Supabase, biarkan localStorage tetap (offline tolerance)
+      } catch (err: any) {
+        const msg: string = err?.message || ""
+        // Supabase terkadang melempar error ini alih-alih mengembalikannya
+        if (
+          msg.includes("Refresh Token Not Found") ||
+          msg.includes("Invalid Refresh Token") ||
+          msg.includes("refresh_token_not_found")
+        ) {
+          console.warn("[Auth] Refresh token kedaluwarsa (thrown), sesi dibersihkan.")
+          try { await supabase.auth.signOut() } catch { /* abaikan */ }
+          if (!cancelled) {
+            setUser(null)
+            removeStorageItem(STORAGE_KEYS.USER)
+            removeStorageItem(STORAGE_KEYS.SESSION)
+          }
+        } else {
+          console.error("[Auth] Gagal verifikasi sesi Supabase:", err)
+          // Jika gagal cek Supabase, biarkan localStorage tetap (offline tolerance)
+        }
       } finally {
         if (!cancelled) setIsLoading(false)
       }
