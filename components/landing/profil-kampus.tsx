@@ -1,97 +1,115 @@
-import { Award, BookOpen, Users, Globe, CheckCircle2 } from "lucide-react"
+import { ShieldCheck, Award, BookOpen, Users, Landmark } from "lucide-react"
 
-const KEUNGGULAN = [
+const TRIDHARMA = [
   {
-    icon: Award,
-    title: "Terakreditasi A",
-    desc: "Seluruh program studi telah terakreditasi BAN-PT dengan nilai unggul dan terpercaya.",
+    nomor: "01",
+    judul: "Pendidikan & Pengajaran Terstandar Internasional",
+    deskripsi: "Kurikulum Outcome-Based Education (OBE) yang disesuaikan dengan kebutuhan kompetensi industri modern dan standar akreditasi internasional.",
   },
   {
-    icon: BookOpen,
-    title: "Kurikulum Modern",
-    desc: "Kurikulum berbasis OBE (Outcome-Based Education) disesuaikan dengan kebutuhan industri.",
+    nomor: "02",
+    judul: "Penelitian Ilmiah & Hilirisasi Inovasi",
+    deskripsi: "Pusat kajian riset multidisiplin dengan ratusan publikasi jurnal bereputasi global terindeks Scopus serta paten karya ilmiah dosen dan mahasiswa.",
   },
   {
-    icon: Users,
-    title: "Dosen Berpengalaman",
-    desc: "Lebih dari 400 dosen aktif, 70% bergelar Doktor dari universitas dalam dan luar negeri.",
+    nomor: "03",
+    judul: "Pengabdian Berkelanjutan kepada Masyarakat",
+    deskripsi: "Pemberdayaan sosial terstruktur, pendampingan digitalisasi UMKM desa binaan, dan program bakti sosial kesehatan lintas daerah.",
   },
-  {
-    icon: Globe,
-    title: "Kemitraan Internasional",
-    desc: "Kerja sama dengan 80+ universitas dan perusahaan global untuk pertukaran mahasiswa dan riset.",
-  },
+]
+
+const STATISTIK_INSTITUSI = [
+  { angka: "8", label: "Fakultas Pilihan", sub: "Teknik, Kedokteran, FEB, Hukum, dsb." },
+  { angka: "45", label: "Program Studi", sub: "Jenjang Sarjana (S1) dan Vokasi (D4)" },
+  { angka: "400+", label: "Tenaga Pengajar", sub: "Lulusan S2 & S3 dalam dan luar negeri" },
+  { angka: "32", label: "Laboratorium Riset", sub: "Terintegrasi piranti komputasi modern" },
 ]
 
 export function ProfilKampus() {
   return (
-    <section id="profil" className="bg-background py-24 sm:py-32">
+    <section id="profil" className="bg-background py-16 sm:py-24 border-b border-border">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Left: Image with overlays */}
-          <div className="relative order-2 lg:order-1">
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[4/3]">
-              <img
-                src="/images/campus-profile.png"
-                alt="Pimpinan dan civitas akademika Universitas Nusantara"
-                className="w-full h-full object-cover"
-              />
-              {/* Bottom gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent" />
-            </div>
+        <div className="grid lg:grid-cols-12 gap-12 items-center">
+          {/* Left: Campus Life Photography */}
+          <div className="lg:col-span-5 order-2 lg:order-1">
+            <div className="relative rounded-2xl overflow-hidden border border-border bg-muted shadow-xs">
+              <div className="aspect-[4/3] overflow-hidden">
+                <img
+                  src="/images/campus-profile.png"
+                  alt="Kegiatan perkuliahan civitas akademika Universitas Nusantara"
+                  className="w-full h-full object-cover"
+                />
+              </div>
 
-            {/* Floating stat badge */}
-            <div className="absolute -bottom-5 -right-4 bg-primary text-primary-foreground rounded-2xl px-5 py-3.5 shadow-xl shadow-primary/30 hidden sm:block">
-              <p className="font-serif text-3xl font-bold leading-none">35+</p>
-              <p className="text-xs text-primary-foreground/75 font-medium mt-1">Tahun Berdiri</p>
-            </div>
-
-            {/* Second decorative badge */}
-            <div className="absolute -top-4 -left-4 bg-accent text-accent-foreground rounded-2xl px-4 py-3 shadow-xl shadow-amber-400/30 hidden sm:block animate-float">
-              <p className="font-serif text-2xl font-bold leading-none">A</p>
-              <p className="text-[10px] text-accent-foreground/75 font-bold uppercase tracking-widest mt-1">BAN-PT</p>
+              {/* Legal Accreditation Notice Banner */}
+              <div className="p-4 bg-card border-t border-border">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-8 w-8 rounded-lg border border-border bg-secondary text-foreground/85 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-foreground">
+                      Terakreditasi Institusi Unggul (A)
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Badan Akreditasi Nasional Perguruan Tinggi (BAN-PT) No. 123/SK/2023
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Right: Content */}
-          <div className="order-1 lg:order-2">
-            <span className="section-badge mb-4 inline-flex">
-              Tentang Kami
-            </span>
-            <h2 className="font-serif text-3xl sm:text-4xl lg:text-[2.6rem] font-bold text-foreground leading-[1.15] text-balance mb-5">
-              Membentuk Generasi{" "}
-              <span
-                style={{
-                  background: "linear-gradient(135deg, var(--primary), oklch(0.55 0.20 275))",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
-                Unggul
-              </span>{" "}
-              untuk Indonesia
-            </h2>
-            <p className="text-muted-foreground leading-relaxed mb-4 text-[0.9375rem]">
-              Universitas Nusantara berdiri sejak 1990 dengan komitmen penuh menghasilkan lulusan berkompeten, berintegritas, dan berdaya saing global. Berlokasi strategis di jantung kota, kampus kami dilengkapi fasilitas bertaraf internasional.
-            </p>
-            <p className="text-muted-foreground leading-relaxed mb-8 text-[0.9375rem]">
-              Kami percaya bahwa setiap mahasiswa memiliki potensi luar biasa. Dengan pendekatan pembelajaran inovatif dan lingkungan akademik yang kondusif, kami membantu setiap mahasiswa meraih pencapaian tertinggi.
+          {/* Right: Academic Values */}
+          <div className="lg:col-span-7 order-1 lg:order-2 space-y-6">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-2">
+                Profil & Identitas Institusi
+              </p>
+              <h2 className="font-serif text-2xl sm:text-4xl font-bold text-foreground leading-snug">
+                Mencetak Generasi Cendekia yang Berintegritas Ilmiah
+              </h2>
+            </div>
+
+            <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+              Universitas Nusantara didirikan pada tahun 1990 sebagai wujud komitmen tridharma perguruan tinggi. Kampus kami menyediakan lingkungan akademik inklusif dengan fasilitas laboratorium riset mutakhir, perpustakaan digital terintegrasi, serta kemitraan magang bersama badan usaha milik negara dan korporasi multinasional.
             </p>
 
-            <div className="grid sm:grid-cols-2 gap-3">
-              {KEUNGGULAN.map((item) => (
+            {/* Tridharma Values */}
+            <div className="space-y-3.5 pt-2">
+              {TRIDHARMA.map((item) => (
                 <div
-                  key={item.title}
-                  className="flex gap-3 p-4 rounded-xl bg-secondary border border-border hover:border-primary/25 hover:bg-primary/5 transition-all duration-200 group card-hover"
+                  key={item.nomor}
+                  className="flex items-start gap-3.5 p-3.5 rounded-xl border border-border bg-card/60"
                 >
-                  <div className="shrink-0 h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/15 transition-colors">
-                    <item.icon className="h-4.5 w-4.5 text-primary" />
-                  </div>
+                  <span className="font-mono font-bold text-xs text-primary px-2 py-1 rounded bg-secondary shrink-0">
+                    {item.nomor}
+                  </span>
                   <div>
-                    <p className="font-semibold text-foreground text-sm">{item.title}</p>
-                    <p className="text-muted-foreground text-xs leading-relaxed mt-0.5">{item.desc}</p>
+                    <h3 className="font-semibold text-xs sm:text-sm text-foreground">
+                      {item.judul}
+                    </h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
+                      {item.deskripsi}
+                    </p>
                   </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Institutional Fact Counters */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-border">
+              {STATISTIK_INSTITUSI.map((stat) => (
+                <div key={stat.label}>
+                  <p className="font-serif font-bold text-xl sm:text-2xl text-foreground">
+                    {stat.angka}
+                  </p>
+                  <p className="text-xs font-semibold text-foreground mt-0.5">
+                    {stat.label}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                    {stat.sub}
+                  </p>
                 </div>
               ))}
             </div>
