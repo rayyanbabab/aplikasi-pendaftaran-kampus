@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { Info, Copy, Eye, Trash2, Upload, CreditCard } from "lucide-react"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
 const BANK_LIST = [
@@ -61,17 +61,17 @@ export default function PembayaranPage() {
 
   const handleInitPayment = () => {
     if (!selectedProdi) {
-      alert("Pilih program studi terlebih dahulu")
+      toast.error("Pilih program studi terlebih dahulu sebelum melakukan pembayaran.")
       return
     }
 
     if (selectedMethod === "virtual_account" && !selectedBank) {
-      alert("Pilih bank untuk virtual account")
+      toast.error("Silakan pilih bank untuk nomor virtual account.")
       return
     }
 
     if (selectedMethod === "ewallet" && !selectedEwallet) {
-      alert("Pilih e-wallet")
+      toast.error("Silakan pilih opsi dompet digital / e-wallet.")
       return
     }
 
@@ -82,19 +82,20 @@ export default function PembayaranPage() {
     )
 
     setStep("proof")
+    toast.success("Instruksi pembayaran berhasil dibuat.")
   }
 
   const handleFileSelect = async (selectedFile: File) => {
     // Validate file type
     const allowedTypes = ["image/jpeg", "image/png", "application/pdf"]
     if (!allowedTypes.includes(selectedFile.type)) {
-      alert("Format file tidak didukung. Gunakan JPG, PNG, atau PDF")
+      toast.error("Format file tidak didukung. Mohon gunakan berkas JPG, PNG, atau PDF.")
       return
     }
 
     // Validate file size (max 5MB)
     if (selectedFile.size > 5 * 1024 * 1024) {
-      alert("Ukuran file terlalu besar. Maksimal 5MB")
+      toast.error("Ukuran file terlalu besar. Maksimal ukuran berkas adalah 5MB.")
       return
     }
 
@@ -223,7 +224,9 @@ export default function PembayaranPage() {
                   <CardTitle className="text-base">QRIS</CardTitle>
                   <CardDescription>Scan kode QR dengan aplikasi pembayaran apapun</CardDescription>
                 </div>
-                <div className="h-10 w-10 bg-secondary rounded" />
+                <div className="h-8 px-2.5 bg-red-600 text-white font-bold text-xs rounded flex items-center justify-center tracking-wider">
+                  QRIS
+                </div>
               </div>
             </CardHeader>
           </Card>
@@ -332,7 +335,7 @@ export default function PembayaranPage() {
                           size="icon"
                           onClick={() => {
                             navigator.clipboard.writeText(payment.virtualAccountNumber!)
-                            alert("Nomor VA disalin ke clipboard")
+                            toast.success("Nomor Virtual Account disalin ke clipboard.")
                           }}
                         >
                           <Copy className="h-4 w-4" />
@@ -350,19 +353,58 @@ export default function PembayaranPage() {
 
                 {/* QRIS Details */}
                 {payment.method === "qris" && (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-center rounded-lg bg-secondary/50 py-8">
-                      <div className="text-center">
-                        <div className="h-32 w-32 mx-auto bg-white rounded-lg mb-2 flex items-center justify-center">
-                          <div className="text-xs text-muted-foreground">QRIS Code</div>
-                        </div>
-                        <p className="text-sm text-muted-foreground">Scan dengan aplikasi pembayaran apapun</p>
+                  <div className="space-y-4">
+                    <div className="rounded-xl border border-border bg-card p-6 flex flex-col items-center text-center">
+                      <div className="bg-red-600 text-white font-bold text-xs px-3 py-1 rounded tracking-widest uppercase mb-3">
+                        QRIS Standar Nasional
                       </div>
+                      <p className="font-semibold text-sm text-foreground">
+                        UNIVERSITAS NUSANTARA PMB
+                      </p>
+                      <p className="text-[11px] font-mono text-muted-foreground mb-4">
+                        NMID: ID1020039201948
+                      </p>
+
+                      {/* SVG QR Code Pattern */}
+                      <div className="bg-white p-3 rounded-lg border border-border shadow-xs mb-3">
+                        <svg className="h-44 w-44" viewBox="0 0 100 100" fill="none">
+                          <rect width="100" height="100" fill="white" />
+                          {/* Top-left finder */}
+                          <rect x="10" y="10" width="24" height="24" stroke="black" strokeWidth="4" fill="none" />
+                          <rect x="16" y="16" width="12" height="12" fill="black" />
+                          {/* Top-right finder */}
+                          <rect x="66" y="10" width="24" height="24" stroke="black" strokeWidth="4" fill="none" />
+                          <rect x="72" y="16" width="12" height="12" fill="black" />
+                          {/* Bottom-left finder */}
+                          <rect x="10" y="66" width="24" height="24" stroke="black" strokeWidth="4" fill="none" />
+                          <rect x="16" y="72" width="12" height="12" fill="black" />
+                          {/* QR data dots */}
+                          <rect x="38" y="12" width="6" height="6" fill="black" />
+                          <rect x="48" y="12" width="6" height="6" fill="black" />
+                          <rect x="42" y="24" width="8" height="8" fill="black" />
+                          <rect x="12" y="42" width="6" height="6" fill="black" />
+                          <rect x="24" y="42" width="8" height="8" fill="black" />
+                          <rect x="38" y="38" width="24" height="24" stroke="black" strokeWidth="3" fill="none" />
+                          <rect x="44" y="44" width="12" height="12" fill="black" />
+                          <rect x="68" y="42" width="6" height="6" fill="black" />
+                          <rect x="80" y="42" width="8" height="8" fill="black" />
+                          <rect x="38" y="68" width="6" height="6" fill="black" />
+                          <rect x="48" y="76" width="8" height="8" fill="black" />
+                          <rect x="66" y="68" width="8" height="8" fill="black" />
+                          <rect x="78" y="76" width="8" height="8" fill="black" />
+                          <rect x="88" y="68" width="4" height="4" fill="black" />
+                        </svg>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
+                        Pindai kode QRIS di atas menggunakan m-Banking (BCA, Mandiri, BRI, BNI) atau e-Wallet (GoPay, OVO, DANA, ShopeePay).
+                      </p>
                     </div>
+
                     <Alert>
                       <Info className="h-4 w-4" />
                       <AlertDescription>
-                        Scan kode QR di atas dengan aplikasi pembayaran Anda (GoPay, OVO, DANA, dll). Pembayaran akan langsung terverifikasi.
+                        Total tagihan: Rp {amount.toLocaleString("id-ID")}. Pembayaran terhubung otomatis ke rekening penampung resmi PMB. Unggah bukti pembayaran di bawah setelah transaksi selesai.
                       </AlertDescription>
                     </Alert>
                   </div>
@@ -387,7 +429,7 @@ export default function PembayaranPage() {
                             size="icon"
                             onClick={() => {
                               navigator.clipboard.writeText(payment.ewalletNumber!)
-                              alert("Nomor disalin ke clipboard")
+                              toast.success("Nomor tujuan e-wallet disalin ke clipboard.")
                             }}
                           >
                             <Copy className="h-4 w-4" />
