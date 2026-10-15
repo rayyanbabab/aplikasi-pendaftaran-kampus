@@ -1,41 +1,37 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, HelpCircle, MessageSquare } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const FAQS = [
   {
     q: "Apa saja jalur pendaftaran yang tersedia di Universitas Nusantara?",
-    a: "Terdapat 4 jalur pendaftaran: (1) SNBT — melalui nilai UTBK nasional, (2) SNBP — melalui nilai rapor & prestasi, (3) Jalur Prestasi — untuk peraih medali/juara olimpiade, atlet, dan hafiz Quran, serta (4) Jalur Mandiri — ujian tulis yang diselenggarakan langsung oleh universitas.",
+    a: "Tersedia 4 jalur pendaftaran resmi: (1) Jalur SNBT (menggunakan nilai UTBK nasional), (2) Jalur SNBP (berdasarkan nilai rapor dan rekomendasi sekolah), (3) Jalur Prestasi Mandiri (kejuaraan sains, olahraga, seni, dan hafiz Quran), serta (4) Jalur Ujian Mandiri CBT (ujian seleksi mandiri berbasis komputer).",
   },
   {
-    q: "Berapa biaya pendaftaran dan apakah bisa dicicil?",
-    a: "Biaya pendaftaran adalah Rp 250.000 (satu kali bayar, non-refundable). Adapun biaya kuliah (UKT) dapat dibayar secara cicilan hingga 3 tahap per semester untuk memudahkan mahasiswa.",
+    q: "Berapa biaya pendaftaran awal dan bagaimana metode pembayarannya?",
+    a: "Biaya formulir pendaftaran adalah Rp 250.000 untuk maksimal 3 pilihan program studi. Pembayaran dapat dilakukan melalui transfer Virtual Account resmi (BCA, Mandiri, BNI, BRI) atau pindai kode QRIS nasional secara otomatis.",
   },
   {
-    q: "Apakah ada beasiswa untuk mahasiswa baru?",
-    a: "Ya, tersedia berbagai beasiswa: Beasiswa KIP-Kuliah (gratis biaya kuliah + uang saku), Beasiswa Prestasi Akademik (potongan 30–70%), Beasiswa Atlet & Seni, serta Beasiswa Hafiz Quran. Informasi lengkap tersedia di portal PMB.",
+    q: "Apakah Uang Kuliah Tunggal (UKT) dapat dicicil?",
+    a: "Ya. Universitas menyediakan skema pembayaran UKT bertahap hingga 3 kali angsuran per semester tanpa bunga tambahan. Mahasiswa atau wali dapat mengajukan rencana cicilan sebelum masa awal perkuliahan.",
   },
   {
-    q: "Dokumen apa saja yang diperlukan untuk mendaftar?",
-    a: "Dokumen yang dibutuhkan: ijazah/SKHUN SMA/sederajat (atau surat keterangan lulus), rapor semester 1–5, KTP/Kartu Keluarga, pas foto terbaru, dan dokumen pendukung sesuai jalur yang dipilih (mis. sertifikat prestasi untuk jalur prestasi).",
+    q: "Bagaimana kriteria dan prosedur pengajuan beasiswa?",
+    a: "Beasiswa terbagi menjadi KIP-Kuliah (pembiayaan penuh oleh pemerintah), Beasiswa Prestasi Akademik (potongan UKT 30% sampai 70%), dan Beasiswa Kemitraan. Pengajuan berkas beasiswa dilakukan bersamaan dengan pengunggahan dokumen pendaftaran.",
   },
   {
-    q: "Bagaimana cara mengikuti virtual tour kampus?",
-    a: "Virtual tour dapat diakses melalui tombol 'Virtual Tour Kampus' di halaman utama ini. Anda juga dapat menjadwalkan kunjungan langsung ke kampus setiap hari kerja pukul 08.00–15.00 WIB dengan menghubungi panitia PMB melalui WhatsApp.",
+    q: "Dokumen apa saja yang wajib diunggah saat registrasi online?",
+    a: "Dokumen wajib meliputi: pas foto formal berwarna terbaru, scan KTP atau Kartu Identitas Anak, scan Kartu Keluarga, dan scan Ijazah atau Surat Keterangan Lulus (SKL) sementara bagi lulusan tahun berjalan.",
   },
   {
-    q: "Kapan pengumuman hasil seleksi diumumkan?",
-    a: "Pengumuman kelulusan untuk Jalur Mandiri dijadwalkan pada 31 Juli 2025. Peserta yang diterima akan menerima notifikasi melalui email terdaftar dan dapat mengecek status di portal PMB menggunakan akun masing-masing.",
+    q: "Kapan pengumuman hasil seleksi diumumkan dan bagaimana cara mengeceknya?",
+    a: "Pengumuman hasil seleksi gelombang berjalan dijadwalkan pada 31 Juli 2025. Calon mahasiswa dapat mengecek status kelulusan secara langsung di portal PMB dengan masuk ke akun masing-masing serta melalui notifikasi email resmi.",
   },
   {
-    q: "Apakah ada asrama mahasiswa?",
-    a: "Ya, tersedia asrama mahasiswa berkapasitas 2.000 kamar dengan fasilitas lengkap (AC, WiFi, laundry, kafetaria). Asrama diprioritaskan untuk mahasiswa baru dari luar kota. Biaya asrama mulai dari Rp 800.000/bulan.",
-  },
-  {
-    q: "Bagaimana prospek kerja lulusan Universitas Nusantara?",
-    a: "92% lulusan kami terserap di dunia kerja dalam 6 bulan setelah wisuda. Kami memiliki Career Center yang aktif memfasilitasi job fair, magang, dan rekrutmen melalui kemitraan dengan 500+ perusahaan nasional dan multinasional.",
+    q: "Apakah kampus menyediakan asrama bagi mahasiswa baru?",
+    a: "Ya, tersedia asrama mahasiswa terpadu berkapasitas 2.000 kamar dengan fasilitas pendukung (kamar berpenyejuk udara, akses internet universitas, kantin sehat, dan pengamanan 24 jam). Prioritas diberikan kepada mahasiswa tahun pertama dari luar daerah.",
   },
 ]
 
@@ -43,28 +39,18 @@ export function FAQ() {
   const [openIdx, setOpenIdx] = useState<number | null>(0)
 
   return (
-    <section id="faq" className="bg-secondary py-24 sm:py-32">
+    <section id="faq" className="bg-secondary/40 py-20 sm:py-28 border-b border-border">
       <div className="mx-auto max-w-4xl px-4 sm:px-6">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <span className="section-badge mb-4 inline-flex">
-            Pertanyaan Umum
-          </span>
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-[2.6rem] font-bold text-foreground text-balance mt-4">
-            Pertanyaan yang Sering{" "}
-            <span
-              style={{
-                background: "linear-gradient(135deg, var(--primary), oklch(0.55 0.20 275))",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              Ditanyakan
-            </span>
+        {/* Section Header */}
+        <div className="max-w-2xl mb-12">
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-2">
+            Pusat Informasi & FAQ
+          </p>
+          <h2 className="font-serif text-2xl sm:text-4xl font-bold text-foreground leading-snug mb-3">
+            Pertanyaan yang Sering Diajukan
           </h2>
-          <p className="text-muted-foreground mt-4 max-w-xl mx-auto text-[0.9375rem] leading-relaxed">
-            Tidak menemukan jawaban yang kamu cari? Hubungi kami langsung via WhatsApp.
+          <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+            Rangkuman jawaban mengenai prosedur pendaftaran, biaya pendidikan, jadwal ujian, dan fasilitas akademik bagi calon mahasiswa dan wali.
           </p>
         </div>
 
@@ -76,28 +62,53 @@ export function FAQ() {
               <div
                 key={idx}
                 className={cn(
-                  "rounded-xl border bg-card overflow-hidden transition-all duration-200",
-                  isOpen ? "border-primary/40 shadow-md shadow-primary/5" : "border-border hover:border-primary/20"
+                  "rounded-lg border bg-card overflow-hidden transition-colors",
+                  isOpen ? "border-primary/40 shadow-sm" : "border-border hover:border-primary/20"
                 )}
               >
                 <button
-                  className="w-full flex items-center justify-between gap-4 p-5 text-left"
+                  className="w-full flex items-center justify-between gap-4 p-5 text-left focus-visible:outline-2 focus-visible:outline-primary"
                   onClick={() => setOpenIdx(isOpen ? null : idx)}
                   aria-expanded={isOpen}
                 >
-                  <span className={cn("font-semibold text-sm sm:text-base pr-4", isOpen ? "text-primary" : "text-foreground")}>
+                  <span className={cn("font-semibold text-sm sm:text-base pr-2", isOpen ? "text-primary" : "text-foreground")}>
                     {item.q}
                   </span>
-                  <ChevronDown className={cn("h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200", isOpen && "rotate-180 text-primary")} />
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
+                      isOpen && "rotate-180 text-primary"
+                    )}
+                  />
                 </button>
                 {isOpen && (
-                  <div className="px-5 pb-5">
-                    <p className="text-muted-foreground text-sm leading-relaxed">{item.a}</p>
+                  <div className="px-5 pb-5 pt-0 border-t border-border/40 mt-1">
+                    <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed pt-3">
+                      {item.a}
+                    </p>
                   </div>
                 )}
               </div>
             )
           })}
+        </div>
+
+        {/* WhatsApp Helpdesk Note */}
+        <div className="mt-8 p-4 rounded-lg bg-card border border-border flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <MessageSquare className="h-5 w-5 text-primary shrink-0" />
+            <p className="text-xs sm:text-sm text-foreground">
+              Memiliki pertanyaan spesifik seputar persyaratan berkas Anda?
+            </p>
+          </div>
+          <a
+            href="https://wa.me/6281234567890?text=Halo%20panitia%20PMB%2C%20saya%20ingin%20bertanya%20tentang%20pendaftaran"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-semibold text-primary hover:underline shrink-0"
+          >
+            Hubungi Panitia PMB
+          </a>
         </div>
       </div>
     </section>
