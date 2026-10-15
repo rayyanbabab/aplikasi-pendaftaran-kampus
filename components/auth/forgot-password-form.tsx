@@ -103,16 +103,8 @@ export function ForgotPasswordForm() {
     <div className="flex min-h-screen">
       {/* ── LEFT PANEL ── */}
       <div
-        className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative overflow-hidden"
-        style={{
-          background: "linear-gradient(145deg, oklch(0.18 0.10 255) 0%, oklch(0.25 0.14 265) 50%, oklch(0.20 0.12 248) 100%)",
-        }}
+        className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative overflow-hidden bg-slate-900 border-r border-slate-800"
       >
-        <div className="absolute top-[-80px] right-[-80px] w-80 h-80 rounded-full opacity-20"
-          style={{ background: "radial-gradient(circle, oklch(0.68 0.18 255), transparent)" }} />
-        <div className="absolute bottom-[-60px] left-[-60px] w-72 h-72 rounded-full opacity-15"
-          style={{ background: "radial-gradient(circle, oklch(0.76 0.155 70), transparent)" }} />
-
         <div className="relative z-10 flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm border border-white/20">
             <GraduationCap className="h-6 w-6 text-white" />
@@ -124,18 +116,12 @@ export function ForgotPasswordForm() {
         </div>
 
         <div className="relative z-10 space-y-8">
-          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white/10 border border-white/15">
-            <KeyRound className="h-10 w-10 text-white/80" />
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 border border-white/15">
+            <KeyRound className="h-8 w-8 text-white/80" />
           </div>
           <div className="space-y-3">
-            <h1 className="text-3xl font-bold text-white" style={{ fontFamily: "var(--font-serif)" }}>
-              Pemulihan<br />
-              <span style={{
-                background: "linear-gradient(135deg, oklch(0.76 0.155 70), oklch(0.82 0.14 60))",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text"
-              }}>Akses Akun</span>
+            <h1 className="text-3xl font-bold text-white font-serif leading-snug">
+              Pemulihan Akses Akun
             </h1>
             <p className="text-white/65 text-sm leading-relaxed max-w-xs">
               Ikuti 3 langkah mudah untuk mendapatkan kembali akses ke akun Anda dengan aman.
@@ -169,7 +155,7 @@ export function ForgotPasswordForm() {
         </div>
       </div>
 
-      {/* ── RIGHT PANEL — Form ── */}
+      {/* RIGHT PANEL: Form */}
       <div className="flex w-full lg:w-1/2 flex-col items-center justify-center px-6 py-12 bg-background">
         <div className="lg:hidden flex items-center gap-2 mb-8">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
