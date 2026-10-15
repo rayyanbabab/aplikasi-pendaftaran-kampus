@@ -23,12 +23,12 @@ import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 
 const ROLE_BADGES: Record<string, { label: string; className: string }> = {
-  super_admin: { label: "Super Admin", className: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20" },
-  admin_pmb: { label: "Admin PMB", className: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20" },
-  verifikator: { label: "Verifikator", className: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" },
-  keuangan: { label: "Keuangan", className: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20" },
-  penguji: { label: "Penguji", className: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20" },
-  calon_mahasiswa: { label: "Calon Mhs", className: "bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20" },
+  super_admin: { label: "Super Admin", className: "bg-secondary text-foreground font-semibold border border-border" },
+  admin_pmb: { label: "Admin PMB", className: "bg-secondary text-foreground font-semibold border border-border" },
+  verifikator: { label: "Verifikator", className: "bg-secondary text-foreground font-semibold border border-border" },
+  keuangan: { label: "Keuangan", className: "bg-secondary text-foreground font-semibold border border-border" },
+  penguji: { label: "Penguji", className: "bg-secondary text-foreground font-semibold border border-border" },
+  calon_mahasiswa: { label: "Calon Mhs", className: "bg-secondary text-foreground/80 border border-border" },
 }
 
 const ADMIN_MENU = [
