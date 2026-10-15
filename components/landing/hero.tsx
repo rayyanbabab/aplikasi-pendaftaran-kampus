@@ -1,169 +1,231 @@
 "use client"
 
-import { ArrowRight, Play, Sparkles } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import Link from "next/link"
+import {
+  ArrowRight,
+  BookOpen,
+  Calendar,
+  CheckCircle2,
+  Download,
+  Building,
+  GraduationCap,
+  ShieldCheck,
+  FileCheck,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 
-const STATS = [
-  { value: "25.000+", label: "Mahasiswa Aktif" },
-  { value: "8", label: "Fakultas" },
-  { value: "45+", label: "Program Studi" },
-  { value: "92%", label: "Lulusan Terserap Kerja" },
+const ADMISSION_METRICS = [
+  {
+    kategori: "Periode Pendaftaran",
+    nilai: "Gelombang II",
+    keterangan: "1 Mei s.d. 30 Juni 2025",
+    utama: true,
+  },
+  {
+    kategori: "Akreditasi Institusi",
+    nilai: "Unggul (A)",
+    keterangan: "BAN-PT No. 123/SK/2023",
+    utama: false,
+  },
+  {
+    kategori: "Biaya Registrasi",
+    nilai: "Rp 250.000",
+    keterangan: "Maks. 3 pilihan program studi",
+    utama: false,
+  },
+  {
+    kategori: "Metode Seleksi",
+    nilai: "CBT & Rapor",
+    keterangan: "Ujian daring atau seleksi nilai",
+    utama: false,
+  },
+]
+
+const FASILITAS_SHOWCASE = [
+  {
+    id: "rektorat",
+    nama: "Gedung Rektorat & Layanan PMB",
+    foto: "/images/hero-campus.png",
+    lokasi: "Kampus Utama Jakarta",
+    keterangan: "Pusat verifikasi berkas fisik, loket administrasi mahasiswa baru, dan ruang bimbingan karir.",
+    fitur: ["Loket Terpadu PMB", "Ruang Sidang Akademik", "Klinik Kesehatan Kampus"],
+  },
+  {
+    id: "perpustakaan",
+    nama: "Perpustakaan Pusat & Riset",
+    foto: "/images/campus-profile.png",
+    lokasi: "Gedung Grha Pustaka Lantai 1-4",
+    keterangan: "Akses 120.000+ buku teks, jurnal internasional terindeks Scopus, serta 40 ruang diskusi komunal.",
+    fitur: ["Akses Jurnal Digital 24/7", "Silent Study Pods", "Pusat Restorasi Arsip"],
+  },
+  {
+    id: "lab",
+    nama: "Laboratorium Komputasi & Rekayasa",
+    foto: "/images/virtual-tour.png",
+    lokasi: "Gedung Riset Sains Terpadu",
+    keterangan: "32 laboratorium komputasi awan, robotika industri, kecerdasan artifisial, dan teknik biomedis.",
+    fitur: ["32 Lab Komputasi Modern", "Cluster Server AI", "Studio Multimedia Digital"],
+  },
 ]
 
 export function Hero() {
-  const [tourModal, setTourModal] = useState(false)
+  const [activeFasilitasIndex, setActiveFasilitasIndex] = useState(0)
+  const activeFasilitas = FASILITAS_SHOWCASE[activeFasilitasIndex]
 
   return (
-    <section
-      id="beranda"
-      className="relative min-h-screen flex items-center overflow-hidden"
-    >
-      {/* Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
-        style={{ backgroundImage: "url('/images/hero-campus.png')" }}
-        role="img"
-        aria-label="Kampus Universitas Nusantara"
-      />
-
-      {/* Layered overlays for premium depth */}
-      <div className="absolute inset-0 bg-[oklch(0.14_0.07_255)]/75" />
-      <div className="absolute inset-0 bg-gradient-to-r from-[oklch(0.12_0.08_255)]/90 via-[oklch(0.14_0.07_255)]/60 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-t from-[oklch(0.10_0.05_255)]/70 via-transparent to-transparent" />
-
-      {/* Decorative mesh orbs */}
-      <div className="absolute top-1/4 right-1/3 w-96 h-96 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
-
-      {/* Announcement Banner */}
-      <div className="absolute top-20 inset-x-0 flex justify-center px-4 animate-fade-in-up">
-        <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 shadow-lg">
-          <Sparkles className="h-3.5 w-3.5 text-accent shrink-0" />
-          <span className="text-white/90 text-xs font-semibold">
-            Pendaftaran PMB 2025/2026 Telah Dibuka —{" "}
-            <span className="text-accent">Batas Akhir 31 Agustus 2025</span>
-          </span>
-        </div>
-      </div>
-
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 pt-20 pb-16">
-        <div className="max-w-2xl">
-          {/* Label */}
-          <p className="text-accent text-xs font-bold uppercase tracking-[0.25em] mb-4 animate-fade-in-up">
-            Penerimaan Mahasiswa Baru 2025/2026
-          </p>
-
-          {/* Heading */}
-          <h1 className="font-serif text-4xl sm:text-5xl lg:text-[3.75rem] font-bold text-white leading-[1.1] text-balance mb-5 animate-fade-in-up animation-delay-200">
-            Wujudkan Impianmu{" "}
-            <br className="hidden sm:block" />
-            Bersama{" "}
-            <span
-              style={{
-                background: "linear-gradient(90deg, oklch(0.76 0.155 70), oklch(0.88 0.13 60))",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              Universitas Nusantara
-            </span>
-          </h1>
-
-          {/* Description */}
-          <p className="text-white/75 text-lg leading-relaxed mb-8 max-w-xl animate-fade-in-up animation-delay-400">
-            Bergabunglah dengan lebih dari 25.000 mahasiswa aktif di 8 fakultas pilihan. Raih prestasi akademik terbaik dengan fasilitas modern dan dosen berpengalaman.
-          </p>
-
-          {/* CTA Buttons */}
-          <div className="flex flex-wrap gap-3 mb-12 animate-fade-in-up animation-delay-600">
-            <Link href="/auth/register">
-              <Button
-                size="lg"
-                className="bg-accent text-accent-foreground hover:bg-accent/90 font-bold gap-2 rounded-xl shadow-xl shadow-amber-500/30 hover:shadow-amber-500/50 hover:-translate-y-0.5 transition-all duration-200"
-              >
-                Daftar Sekarang <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <button
-              onClick={() => setTourModal(true)}
-              className="flex items-center gap-2.5 px-5 py-2.5 rounded-xl border border-white/25 text-white text-sm font-semibold hover:bg-white/12 hover:border-white/40 transition-all duration-200 backdrop-blur-sm"
-            >
-              <span className="flex items-center justify-center h-7 w-7 rounded-full bg-white/20 hover:bg-white/30 transition-colors">
-                <Play className="h-3 w-3 text-white fill-white ml-0.5" />
-              </span>
-              Virtual Tour Kampus
-            </button>
-          </div>
-
-          {/* Stats */}
-          <div className="flex flex-wrap gap-8 animate-fade-in-up animation-delay-600">
-            {STATS.map((stat, i) => (
-              <div key={stat.label} className="text-center">
-                <p
-                  className="font-serif font-bold text-2xl sm:text-3xl"
-                  style={{
-                    background: "linear-gradient(135deg, oklch(0.76 0.155 70), oklch(0.92 0.12 60))",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                  }}
-                >
-                  {stat.value}
-                </p>
-                <p className="text-white/60 text-xs font-medium mt-0.5 tracking-wide">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Scroll hint */}
-      <div className="absolute bottom-8 inset-x-0 flex justify-center">
-        <div className="flex flex-col items-center gap-2 animate-bounce">
-          <div className="w-px h-8 bg-gradient-to-b from-white/0 via-white/40 to-white/0 rounded-full" />
-          <p className="text-white/40 text-[10px] uppercase tracking-widest font-medium">Gulir ke bawah</p>
-        </div>
-      </div>
-
-      {/* Virtual Tour Modal */}
-      {tourModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
-          onClick={() => setTourModal(false)}
-        >
-          <div
-            className="relative bg-card rounded-2xl overflow-hidden w-full max-w-3xl shadow-2xl border border-border animate-fade-in-up"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <h3 className="font-serif font-semibold text-foreground">Virtual Tour Kampus</h3>
-              <button
-                onClick={() => setTourModal(false)}
-                className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                aria-label="Tutup"
-              >
-                ✕
-              </button>
+    <section id="beranda" className="bg-background border-b border-border py-12 sm:py-16 lg:py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+          {/* ========================================================= */}
+          {/* LEFT: EDITORIAL COPY & VERIFIED ADMISSION HIGHLIGHTS      */}
+          {/* ========================================================= */}
+          <div className="lg:col-span-7 space-y-6">
+            {/* Official University Header */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-2">
+                Penerimaan Mahasiswa Baru Tahun Akademik 2025/2026
+              </p>
+              <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground leading-[1.16] tracking-tight">
+                Membuka Gerbang Pendidikan Tinggi Berkualitas dan Beretika
+              </h1>
             </div>
-            <div className="relative aspect-video bg-secondary">
-              <img
-                src="/images/virtual-tour.png"
-                alt="Virtual Tour Kampus Universitas Nusantara"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-black/60 backdrop-blur-sm rounded-xl px-6 py-4 text-center">
-                  <p className="text-white font-semibold font-serif mb-1">Virtual Tour 360°</p>
-                  <p className="text-white/70 text-sm">Fitur virtual tour interaktif segera hadir</p>
+
+            {/* Description */}
+            <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl font-normal">
+              Selamat datang di portal pendaftaran resmi Universitas Nusantara. Kami menyelenggarakan pendidikan Sarjana (S1) dan Vokasi (D4) pada 8 fakultas dengan kurikulum berbasis capaian pembelajaran Outcome-Based Education (OBE), tenaga pengajar berkualifikasi doktor, serta beasiswa penuh KIP-Kuliah dan prestasi.
+            </p>
+
+            {/* Functional Call-to-Action Group */}
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <Link href="/auth/register">
+                <Button
+                  size="lg"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-5 sm:px-6 h-11 rounded-lg gap-2 shadow-xs text-xs sm:text-sm"
+                >
+                  Daftar PMB Online 2025/2026
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+
+              <a href="#unduhan">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-border text-foreground hover:bg-secondary h-11 px-4 sm:px-5 rounded-lg gap-2 text-xs sm:text-sm"
+                >
+                  <Download className="h-4 w-4 text-muted-foreground" />
+                  Unduh Panduan PMB (PDF)
+                </Button>
+              </a>
+
+              <a
+                href="#fakultas"
+                className="text-xs sm:text-sm font-semibold text-primary hover:underline px-2 py-2"
+              >
+                Katalog Program Studi & Kuota &rarr;
+              </a>
+            </div>
+
+            {/* Admissions Facts Table */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 border-t border-border">
+              {ADMISSION_METRICS.map((item) => (
+                <div
+                  key={item.kategori}
+                  className="p-3.5 rounded-lg border border-border bg-card/60"
+                >
+                  <p className="text-[11px] font-medium text-muted-foreground">
+                    {item.kategori}
+                  </p>
+                  <p
+                    className={`font-serif font-bold text-base sm:text-lg mt-0.5 ${
+                      item.utama ? "text-emerald-700 dark:text-emerald-400" : "text-foreground"
+                    }`}
+                  >
+                    {item.nilai}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                    {item.keterangan}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ========================================================= */}
+          {/* RIGHT: INTERACTIVE CAMPUS FACILITY SWITCHER               */}
+          {/* ========================================================= */}
+          <div className="lg:col-span-5 space-y-3">
+            {/* Facility Tab Switcher */}
+            <div className="flex items-center gap-1.5 p-1 rounded-lg bg-secondary/80 border border-border">
+              {FASILITAS_SHOWCASE.map((fasilitas, idx) => (
+                <button
+                  key={fasilitas.id}
+                  onClick={() => setActiveFasilitasIndex(idx)}
+                  className={`flex-1 py-1.5 px-2 rounded-md text-[11px] font-medium transition-colors text-center truncate ${
+                    activeFasilitasIndex === idx
+                      ? "bg-card text-foreground font-semibold shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {fasilitas.id === "rektorat"
+                    ? "Rektorat"
+                    : fasilitas.id === "perpustakaan"
+                    ? "Perpustakaan"
+                    : "Laboratorium"}
+                </button>
+              ))}
+            </div>
+
+            {/* Photo Card */}
+            <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-xs">
+              <div className="relative aspect-[4/3] bg-muted overflow-hidden">
+                <img
+                  src={activeFasilitas.foto}
+                  alt={activeFasilitas.nama}
+                  className="w-full h-full object-cover transition-all duration-300"
+                />
+                <div className="absolute top-3 right-3">
+                  <Badge className="bg-background/95 text-foreground backdrop-blur-sm border border-border text-xs font-semibold px-2.5 py-1">
+                    {activeFasilitas.lokasi}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Informative Body */}
+              <div className="p-5 space-y-3.5">
+                <div>
+                  <h3 className="font-serif font-bold text-base text-foreground">
+                    {activeFasilitas.nama}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                    {activeFasilitas.keterangan}
+                  </p>
+                </div>
+
+                {/* Facility Features */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-3 border-t border-border text-[11px]">
+                  {activeFasilitas.fitur.map((item) => (
+                    <div key={item} className="flex items-center gap-1.5 text-foreground font-medium">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                      <span className="truncate">{item}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-1">
+                  <Link href="/auth/register" className="block w-full">
+                    <Button variant="secondary" className="w-full text-xs font-semibold h-9 rounded-lg">
+                      Buat Akun Calon Mahasiswa Baru
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </section>
   )
 }
