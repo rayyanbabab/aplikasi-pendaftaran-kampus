@@ -72,19 +72,10 @@ export function RegisterForm() {
 
   return (
     <div className="flex min-h-screen">
-      {/* ── LEFT PANEL — Steps & Brand ── */}
+      {/* LEFT PANEL: Steps and Brand */}
       <div
-        className="hidden lg:flex lg:w-[42%] flex-col justify-between p-12 relative overflow-hidden"
-        style={{
-          background: "linear-gradient(145deg, oklch(0.18 0.10 255) 0%, oklch(0.25 0.14 265) 50%, oklch(0.20 0.12 248) 100%)",
-        }}
+        className="hidden lg:flex lg:w-[42%] flex-col justify-between p-12 relative overflow-hidden bg-slate-900 border-r border-slate-800"
       >
-        {/* Decorative blobs */}
-        <div className="absolute top-[-80px] right-[-80px] w-80 h-80 rounded-full opacity-20"
-          style={{ background: "radial-gradient(circle, oklch(0.68 0.18 255), transparent)" }} />
-        <div className="absolute bottom-[-60px] left-[-60px] w-72 h-72 rounded-full opacity-15"
-          style={{ background: "radial-gradient(circle, oklch(0.76 0.155 70), transparent)" }} />
-
         {/* Logo */}
         <div className="relative z-10">
           <Link href="/" className="flex items-center gap-3 w-fit">
@@ -104,14 +95,8 @@ export function RegisterForm() {
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase bg-white/10 text-white/80 border border-white/15">
               <UserPlus className="h-3 w-3" /> Pendaftaran Baru
             </div>
-            <h1 className="text-3xl font-bold text-white leading-snug" style={{ fontFamily: "var(--font-serif)" }}>
-              3 Langkah Mudah<br />
-              <span style={{
-                background: "linear-gradient(135deg, oklch(0.76 0.155 70), oklch(0.82 0.14 60))",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text"
-              }}>Untuk Bergabung</span>
+            <h1 className="text-3xl font-bold text-white leading-snug font-serif">
+              3 Langkah Mudah Untuk Bergabung
             </h1>
             <p className="text-white/60 text-sm leading-relaxed">
               Daftarkan diri Anda sekarang dan mulai perjalanan akademik bersama Universitas Nusantara.
@@ -157,7 +142,7 @@ export function RegisterForm() {
         </div>
       </div>
 
-      {/* ── RIGHT PANEL — Register Form ── */}
+      {/* RIGHT PANEL: Register Form */}
       <div className="flex w-full lg:w-[58%] flex-col items-center justify-center px-6 py-10 bg-background overflow-y-auto">
         {/* Mobile logo */}
         <div className="lg:hidden flex items-center gap-2 mb-6">
