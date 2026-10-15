@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Info } from "lucide-react"
+import { toast } from "sonner"
 import {
   FormRegistrasiTemplate,
   KartuPesertaTemplate,
@@ -27,10 +28,10 @@ export default function CetakPage() {
   }
 
   const handleDownload = async () => {
-    // In a real application, this would use html2pdf or similar
-    alert(
-      "Fitur download PDF akan tersedia setelah integrasi html2pdf. Untuk saat ini, gunakan fitur print ke PDF dari browser Anda."
-    )
+    toast.info("Gunakan opsi 'Simpan sebagai PDF' (Save as PDF) pada dialog cetak browser Anda untuk mengunduh berkas.", {
+      description: "Dialog cetak browser akan otomatis terbuka.",
+    })
+    setTimeout(() => window.print(), 500)
   }
 
   return (
