@@ -3,11 +3,23 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { generateProgramRecommendation } from '@/lib/ai-service';
-import { ArrowRight, Loader2, BarChart3, Home, LayoutDashboard, Shield } from 'lucide-react';
+import {
+  ArrowRight,
+  Loader2,
+  Compass,
+  ArrowLeft,
+  CheckCircle2,
+  GraduationCap,
+  RotateCcw,
+  BookOpen,
+  Award,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Scores {
   [key: string]: number;
@@ -23,36 +35,41 @@ interface Recommendation {
   score: number;
 }
 
-const PROGRAMS = [
+const AVAILABLE_PROGRAMS = [
   'Teknik Informatika',
   'Teknik Mesin',
+  'Teknik Sipil',
   'Manajemen Bisnis',
   'Akuntansi',
-  'Kedokteran',
-  'Kedokteran Gigi',
-  'Farmasi',
-  'Hukum',
-  'Psikologi',
+  'Pendidikan Dokter',
+  'Farmasi Klinis',
+  'Ilmu Hukum',
+  'Ilmu Komunikasi',
   'Pendidikan Matematika',
-  'Pendidikan Bahasa Inggris',
   'Sistem Informasi',
+  'Bisnis Digital',
 ];
 
 export default function RekomendasiPage() {
   const [step, setStep] = useState<'quiz' | 'results'>('quiz');
   const [scores, setScores] = useState<Scores>({
-    matematika: 75,
-    bahasaIndonesia: 75,
-    bahasaInggris: 75,
-    ipa: 75,
+    matematika: 85,
+    bahasaIndonesia: 80,
+    bahasaInggris: 82,
+    ipa: 84,
   });
-  const [preferences, setPreferences] = useState<string[]>([]);
+  const [preferences, setPreferences] = useState<string[]>(['Teknik Informatika']);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Live Calculations for Real-time Feedback
+  const averageScore = Math.round(
+    (scores.matematika + scores.bahasaIndonesia + scores.bahasaInggris + scores.ipa) / 4
+  );
+
   const togglePreference = (program: string) => {
     setPreferences((prev) =>
-      prev.includes(program) ? prev.filter((p) => p !== program) : [...prev, program],
+      prev.includes(program) ? prev.filter((p) => p !== program) : [...prev, program]
     );
   };
 
@@ -63,67 +80,121 @@ export default function RekomendasiPage() {
       setRecommendations(result);
       setStep('results');
     } catch (error) {
-      console.error('[v0] Error generating recommendations:', error);
+      console.error('Error generating recommendations:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleReset = () => {
+    setScores({
+      matematika: 80,
+      bahasaIndonesia: 80,
+      bahasaInggris: 80,
+      ipa: 80,
+    });
+    setPreferences([]);
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-6">
-            <Link href="/">
-              <Button variant="ghost" size="icon" className="shrink-0">
-                <Home className="h-5 w-5" />
-              </Button>
-            </Link>
+    <div className="min-h-screen bg-background py-10 px-4 sm:px-6">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Navigation & Header */}
+        <div>
+          <div className="flex items-center justify-between gap-4 mb-6">
             <Link href="/dashboard">
-              <Button variant="ghost" size="icon" className="shrink-0">
-                <LayoutDashboard className="h-5 w-5" />
+              <Button variant="outline" size="sm" className="gap-2 text-xs">
+                <ArrowLeft className="h-4 w-4" />
+                Kembali ke Portal
               </Button>
             </Link>
-            <Link href="/admin">
-              <Button variant="ghost" size="icon" className="shrink-0">
-                <Shield className="h-5 w-5" />
-              </Button>
-            </Link>
-            <div className="h-6 w-px bg-gray-300"></div>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
-                <BarChart3 className="w-6 h-6 text-purple-600" />
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Link href="/" className="hover:text-foreground">
+                Halaman Utama
+              </Link>
+              <span>•</span>
+              <span className="font-semibold text-foreground">
+                Konsultasi Penjurusan
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-4 pb-6 border-b border-border">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
+              <Compass className="h-6 w-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="outline" className="text-[10px] uppercase font-mono py-0">
+                  Panduan Akademik
+                </Badge>
+                <span className="text-xs text-muted-foreground">Evaluasi Nilai Rapor</span>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Rekomendasi Program Studi</h1>
-                <p className="text-sm text-gray-600">
-                  Temukan program studi yang sesuai dengan kemampuan dan minat Anda
-                </p>
-              </div>
+              <h1 className="text-2xl sm:text-3xl font-serif font-bold text-foreground">
+                Analisis Rekomendasi Program Studi
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-2xl leading-relaxed">
+                Identifikasi kesesuaian nilai rapor semester 1 s.d. 5 dan minat bidang keilmuan Anda bersama kurikulum resmi Universitas Nusantara.
+              </p>
             </div>
           </div>
         </div>
 
         {step === 'quiz' ? (
-          <Card className="p-8">
-            <div className="space-y-8">
-              {/* Scores Section */}
+          <div className="space-y-8">
+            {/* Live Profile Overview Card */}
+            <div className="rounded-xl border border-border bg-card p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">1. Nilai Akademik Anda</h2>
-                <div className="space-y-6">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Profil Rata-rata Nilai Rapor
+                </p>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-3xl font-bold font-mono text-primary">
+                    {averageScore}
+                  </span>
+                  <span className="text-xs text-muted-foreground">/ 100 Skala Rapor</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleReset}
+                  className="text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Reset Nilai
+                </Button>
+              </div>
+            </div>
+
+            {/* Step 1: Input Nilai Slider Cards */}
+            <Card className="border border-border shadow-xs">
+              <CardHeader className="pb-4 border-b border-border">
+                <CardTitle className="text-base font-serif">
+                  1. Masukkan Estimasi Nilai Rata-rata Rapor (Skala 0 s.d. 100)
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Gunakan estimasi nilai semester 1 sampai 5 untuk memperoleh rekomendasi paling akurat.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid sm:grid-cols-2 gap-5">
                   {/* Matematika */}
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <label className="text-sm font-medium text-gray-700">Matematika</label>
-                      <span className="text-lg font-semibold text-purple-600">{scores.matematika}</span>
+                  <div className="p-4 rounded-xl bg-secondary/30 border border-border">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+                        Matematika & Logika
+                      </span>
+                      <span className="text-base font-bold font-mono text-primary">
+                        {scores.matematika}
+                      </span>
                     </div>
                     <Slider
                       value={[scores.matematika]}
-                      onValueChange={(value) =>
-                        setScores({ ...scores, matematika: value[0] })
-                      }
-                      min={0}
+                      onValueChange={(val) => setScores({ ...scores, matematika: val[0] })}
+                      min={40}
                       max={100}
                       step={1}
                       className="w-full"
@@ -131,17 +202,19 @@ export default function RekomendasiPage() {
                   </div>
 
                   {/* Bahasa Indonesia */}
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <label className="text-sm font-medium text-gray-700">Bahasa Indonesia</label>
-                      <span className="text-lg font-semibold text-purple-600">{scores.bahasaIndonesia}</span>
+                  <div className="p-4 rounded-xl bg-secondary/30 border border-border">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+                        Bahasa Indonesia
+                      </span>
+                      <span className="text-base font-bold font-mono text-primary">
+                        {scores.bahasaIndonesia}
+                      </span>
                     </div>
                     <Slider
                       value={[scores.bahasaIndonesia]}
-                      onValueChange={(value) =>
-                        setScores({ ...scores, bahasaIndonesia: value[0] })
-                      }
-                      min={0}
+                      onValueChange={(val) => setScores({ ...scores, bahasaIndonesia: val[0] })}
+                      min={40}
                       max={100}
                       step={1}
                       className="w-full"
@@ -149,157 +222,190 @@ export default function RekomendasiPage() {
                   </div>
 
                   {/* Bahasa Inggris */}
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <label className="text-sm font-medium text-gray-700">Bahasa Inggris</label>
-                      <span className="text-lg font-semibold text-purple-600">{scores.bahasaInggris}</span>
+                  <div className="p-4 rounded-xl bg-secondary/30 border border-border">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+                        Bahasa Inggris
+                      </span>
+                      <span className="text-base font-bold font-mono text-primary">
+                        {scores.bahasaInggris}
+                      </span>
                     </div>
                     <Slider
                       value={[scores.bahasaInggris]}
-                      onValueChange={(value) =>
-                        setScores({ ...scores, bahasaInggris: value[0] })
-                      }
-                      min={0}
+                      onValueChange={(val) => setScores({ ...scores, bahasaInggris: val[0] })}
+                      min={40}
                       max={100}
                       step={1}
                       className="w-full"
                     />
                   </div>
 
-                  {/* IPA */}
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <label className="text-sm font-medium text-gray-700">IPA (Biologi, Kimia, Fisika)</label>
-                      <span className="text-lg font-semibold text-purple-600">{scores.ipa}</span>
+                  {/* Sains / IPA */}
+                  <div className="p-4 rounded-xl bg-secondary/30 border border-border">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+                        IPA / Rumpun Saintek
+                      </span>
+                      <span className="text-base font-bold font-mono text-primary">
+                        {scores.ipa}
+                      </span>
                     </div>
                     <Slider
                       value={[scores.ipa]}
-                      onValueChange={(value) =>
-                        setScores({ ...scores, ipa: value[0] })
-                      }
-                      min={0}
+                      onValueChange={(val) => setScores({ ...scores, ipa: val[0] })}
+                      min={40}
                       max={100}
                       step={1}
                       className="w-full"
                     />
                   </div>
                 </div>
-              </div>
+              </CardContent>
+            </Card>
 
-              <div className="border-t pt-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">2. Program Studi Pilihan</h2>
-                <p className="text-sm text-gray-600 mb-4">
-                  Pilih program studi yang paling menarik bagi Anda (opsional)
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {PROGRAMS.map((program) => (
-                    <div key={program} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={program}
-                        checked={preferences.includes(program)}
-                        onCheckedChange={() => togglePreference(program)}
-                      />
-                      <label htmlFor={program} className="text-sm text-gray-700 cursor-pointer">
-                        {program}
-                      </label>
-                    </div>
-                  ))}
+            {/* Step 2: Minat Bidang */}
+            <Card className="border border-border shadow-xs">
+              <CardHeader className="pb-4 border-b border-border">
+                <CardTitle className="text-base font-serif">
+                  2. Bidang Keilmuan yang Paling Anda Minati (Opsional)
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Pilih prodi yang ingin diprioritaskan dalam pencocokan algoritma.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {AVAILABLE_PROGRAMS.map((program) => {
+                    const isChecked = preferences.includes(program);
+                    return (
+                      <div
+                        key={program}
+                        onClick={() => togglePreference(program)}
+                        className={cn(
+                          "flex items-center space-x-2.5 p-3 rounded-xl border text-xs cursor-pointer transition-colors",
+                          isChecked
+                            ? "border-primary bg-primary/10 text-primary font-semibold"
+                            : "border-border bg-card text-foreground hover:bg-secondary/40"
+                        )}
+                      >
+                        <Checkbox
+                          id={program}
+                          checked={isChecked}
+                          onCheckedChange={() => togglePreference(program)}
+                        />
+                        <label htmlFor={program} className="cursor-pointer truncate">
+                          {program}
+                        </label>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
+              </CardContent>
+            </Card>
 
-              <div className="flex gap-3 pt-4">
-                <Button
-                  onClick={handleGetRecommendations}
-                  disabled={isLoading}
-                  className="flex-1 bg-purple-600 hover:bg-purple-700"
-                  size="lg"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Menganalisis...
-                    </>
-                  ) : (
-                    <>
-                      Dapatkan Rekomendasi
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </>
-                  )}
-                </Button>
-              </div>
+            {/* Action Button */}
+            <div className="pt-2">
+              <Button
+                onClick={handleGetRecommendations}
+                disabled={isLoading}
+                className="w-full sm:w-auto px-8 h-11 gap-2 font-semibold text-xs sm:text-sm"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Menganalisis Kesesuaian Program...
+                  </>
+                ) : (
+                  <>
+                    Tampilkan Rekomendasi Program Studi
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </Button>
             </div>
-          </Card>
+          </div>
         ) : (
+          /* Results View */
           <div className="space-y-6">
-            <Button
-              variant="outline"
-              onClick={() => setStep('quiz')}
-              className="mb-4"
-            >
-              Kembali
-            </Button>
+            <div className="flex items-center justify-between">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setStep('quiz')}
+                className="gap-2 text-xs"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Ubah Data Nilai & Minat
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Menampilkan {recommendations.length} rekomendasi dengan kecocokan tertinggi
+              </span>
+            </div>
 
             <div className="space-y-4">
               {recommendations.map((rec, index) => (
                 <Card
                   key={rec.program}
-                  className={`p-6 border-l-4 ${
-                    index === 0
-                      ? 'border-l-yellow-400 bg-yellow-50'
-                      : index === 1
-                        ? 'border-l-gray-400 bg-gray-50'
-                        : 'border-l-orange-400 bg-orange-50'
-                  }`}
+                  className="border border-border bg-card hover:border-primary/40 transition-all shadow-xs"
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-2xl font-bold text-gray-900">#{index + 1}</span>
-                        <h3 className="text-xl font-semibold text-gray-900">{rec.program}</h3>
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      <div>
+                        <div className="flex items-center gap-2.5 mb-1.5">
+                          <span className="h-6 w-6 rounded-md bg-primary text-primary-foreground font-mono font-bold text-xs flex items-center justify-center">
+                            #{index + 1}
+                          </span>
+                          <h3 className="text-lg font-bold font-serif text-foreground">
+                            {rec.program}
+                          </h3>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Universitas Nusantara • Fakultas Terkait
+                        </p>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <Badge
+                          variant="outline"
+                          className="text-xs font-semibold py-1 px-2.5 border-primary/30 text-primary font-mono"
+                        >
+                          Kecocokan {rec.score}%
+                        </Badge>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-3xl font-bold text-purple-600">{rec.score}%</div>
-                      <div className="text-xs text-gray-500">Kesesuaian</div>
+
+                    <p className="text-foreground/80 text-xs sm:text-sm leading-relaxed mb-5">
+                      {rec.reason}
+                    </p>
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                        <span>Memenuhi syarat nilai rapor seleksi</span>
+                      </div>
+
+                      <Link href="/dashboard/kuliah">
+                        <Button size="sm" className="text-xs font-semibold gap-1.5">
+                          <GraduationCap className="h-4 w-4" />
+                          Pilih Program Ini di Formulir
+                        </Button>
+                      </Link>
                     </div>
-                  </div>
-
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-                    <div
-                      className={`h-2 rounded-full transition-all duration-500 ${
-                        index === 0
-                          ? 'bg-yellow-400'
-                          : index === 1
-                            ? 'bg-gray-400'
-                            : 'bg-orange-400'
-                      }`}
-                      style={{ width: `${rec.score}%` }}
-                    />
-                  </div>
-
-                  <p className="text-gray-700 text-sm leading-relaxed">{rec.reason}</p>
-
-                  <div className="mt-4 flex gap-2">
-                    <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
-                      Pelajari Lebih Lanjut
-                    </Button>
-                    <Button size="sm" variant="outline">
-                      Lihat Jalur Masuk
-                    </Button>
-                  </div>
+                  </CardContent>
                 </Card>
               ))}
             </div>
 
-            <Card className="bg-blue-50 border-blue-200 p-6">
-              <h3 className="font-semibold text-blue-900 mb-2">Tips untuk Aplikasi Anda</h3>
-              <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                <li>Pilih 3 program studi favorit Anda di aplikasi pendaftaran</li>
-                <li>Pastikan nilai dan dokumen sudah lengkap sebelum submit</li>
-                <li>Cek persyaratan khusus untuk setiap program yang Anda pilih</li>
-                <li>Ikuti jadwal pendaftaran sesuai gelombang pilihan Anda</li>
-              </ul>
-            </Card>
+            {/* Advice Note */}
+            <div className="rounded-xl border border-border bg-secondary/30 p-6 text-xs text-muted-foreground space-y-2">
+              <h4 className="font-semibold text-sm text-foreground mb-1">
+                Panduan Pendaftaran Selanjutnya
+              </h4>
+              <p>
+                Rekomendasi di atas dihitung berdasarkan simulasi kurikulum akademik. Anda dapat mendaftarkan hingga 3 pilihan program studi di formulir pendaftaran akun portal Anda.
+              </p>
+            </div>
           </div>
         )}
       </div>
