@@ -150,6 +150,7 @@ export interface Pembayaran {
 
 export interface RegistrationData {
   userId: string
+  biodata?: Partial<DataPribadi & { asalSekolah?: string }>
   dataPribadi: DataPribadi
   dataOrangTua: DataOrangTua
   dataSekolah: DataSekolah

@@ -1,7 +1,10 @@
 "use client"
 
+import { useState } from "react"
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { useRegistration } from "@/contexts/registration-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
@@ -13,196 +16,287 @@ import {
   FileText,
   Info,
   ArrowRight,
+  RefreshCw,
+  Printer,
+  Calendar,
+  ShieldCheck,
 } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const statusConfig = {
   draft: {
-    label: "Draft",
-    description: "Pendaftaran belum disubmit",
+    label: "Draft Pendaftaran",
+    description: "Formulir pendaftaran belum disubmit secara final.",
     icon: FileText,
-    color: "bg-slate-100 text-slate-800",
-    textColor: "text-slate-600",
+    badgeColor: "bg-secondary text-secondary-foreground border-border",
+    ringColor: "text-muted-foreground",
   },
   menunggu_verifikasi: {
-    label: "Menunggu Verifikasi",
-    description: "Berkas Anda sedang diverifikasi",
+    label: "Menunggu Verifikasi Berkas",
+    description: "Dokumen pendaftaran Anda sedang dalam antrean verifikasi tim admisi.",
     icon: Clock,
-    color: "bg-blue-100 text-blue-800",
-    textColor: "text-blue-600",
+    badgeColor: "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+    ringColor: "text-blue-600",
   },
   berkas_ditolak: {
-    label: "Berkas Ditolak",
-    description: "Berkas Anda ditolak, silakan upload ulang",
+    label: "Berkas Perlu Perbaikan",
+    description: "Beberapa dokumen tidak memenuhi persyaratan resmi. Silakan unggah ulang.",
     icon: AlertCircle,
-    color: "bg-red-100 text-red-800",
-    textColor: "text-red-600",
+    badgeColor: "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800",
+    ringColor: "text-red-600",
   },
   berkas_diterima: {
-    label: "Berkas Diterima",
-    description: "Berkas Anda telah diterima",
+    label: "Berkas Terverifikasi",
+    description: "Seluruh berkas persyaratan telah divalidasi. Anda berhak mengikuti tahapan seleksi.",
     icon: CheckCircle2,
-    color: "bg-green-100 text-green-800",
-    textColor: "text-green-600",
+    badgeColor: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+    ringColor: "text-emerald-600",
   },
   lulus_seleksi: {
-    label: "Lulus Seleksi",
-    description: "Selamat! Anda lulus seleksi",
+    label: "Dinyatakan Lolos Seleksi",
+    description: "Selamat! Anda dinyatakan diterima sebagai calon mahasiswa baru.",
     icon: Award,
-    color: "bg-emerald-100 text-emerald-800",
-    textColor: "text-emerald-600",
+    badgeColor: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+    ringColor: "text-emerald-600",
   },
   tidak_lulus: {
-    label: "Tidak Lulus",
-    description: "Mohon maaf, Anda tidak lulus seleksi",
+    label: "Belum Memenuhi Kuota",
+    description: "Nilai seleksi Anda belum memenuhi kuota program studi pilihan pada gelombang ini.",
     icon: XCircle,
-    color: "bg-red-100 text-red-800",
-    textColor: "text-red-600",
+    badgeColor: "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800",
+    ringColor: "text-red-600",
   },
   daftar_ulang: {
-    label: "Daftar Ulang",
-    description: "Silakan lakukan daftar ulang",
-    icon: FileText,
-    color: "bg-amber-100 text-amber-800",
-    textColor: "text-amber-600",
+    label: "Masa Registrasi Ulang",
+    description: "Silakan selesaikan pembayaran biaya UKT semester 1 untuk penetapan NIM resmi.",
+    icon: CheckCircle2,
+    badgeColor: "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800",
+    ringColor: "text-amber-600",
   },
 }
 
 const statusTimeline = [
-  { id: "draft", label: "Mengisi Data", order: 1 },
-  { id: "menunggu_verifikasi", label: "Verifikasi", order: 2 },
-  { id: "berkas_diterima", label: "Berkas Diterima", order: 3 },
-  { id: "lulus_seleksi", label: "Lulus Seleksi", order: 4 },
-  { id: "daftar_ulang", label: "Daftar Ulang", order: 5 },
+  { id: "draft", label: "Pengisian Formulir", order: 1, desc: "Biodata, pilihan prodi, dan upload berkas persyaratan" },
+  { id: "menunggu_verifikasi", label: "Verifikasi Berkas", order: 2, desc: "Pemeriksaan keabsahan dokumen oleh panitia PMB" },
+  { id: "berkas_diterima", label: "Pelaksanaan Ujian / CBT", order: 3, desc: "Ujian seleksi berbasis komputer daring atau luring" },
+  { id: "lulus_seleksi", label: "Pengumuman Kelulusan", order: 4, desc: "Penerbitan Surat Keputusan Penerimaan Mahasiswa Baru" },
+  { id: "daftar_ulang", label: "Registrasi Ulang & UKT", order: 5, desc: "Pembayaran UKT perdana dan penerbitan NIM" },
 ]
 
 export default function StatusPage() {
   const { registration } = useRegistration()
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   if (!registration) return null
 
-  const currentStatus = registration.status
-  const config = statusConfig[currentStatus as keyof typeof statusConfig]
+  const currentStatus = registration.status || "draft"
+  const config = statusConfig[currentStatus as keyof typeof statusConfig] || statusConfig.draft
   const Icon = config.icon
 
   // Determine progress
   const currentOrder = statusTimeline.findIndex((s) => s.id === currentStatus) + 1
 
+  const handleRefresh = () => {
+    setIsRefreshing(true)
+    setTimeout(() => setIsRefreshing(false), 800)
+  }
+
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">Status Pendaftaran</h1>
-        <p className="text-muted-foreground">Pantau perkembangan status pendaftaran Anda</p>
+    <div className="space-y-8 p-6 sm:p-8 max-w-5xl mx-auto">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider mb-1">
+            <ShieldCheck className="h-4 w-4" />
+            Sistem Informasi Admisi
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-foreground">
+            Status Seleksi & Kelulusan
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+            Pantau perkembangan verifikasi berkas dan pengumuman hasil seleksi secara real-time.
+          </p>
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="gap-2 text-xs self-start sm:self-auto"
+        >
+          <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
+          Muat Ulang Status
+        </Button>
       </div>
 
-      {/* Current Status Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Status Saat Ini</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-start gap-4">
-            <div className={`rounded-full p-3 ${config.color}`}>
-              <Icon className="h-6 w-6" />
+      {/* Current Status Banner */}
+      <Card className="border border-border shadow-xs overflow-hidden">
+        <CardContent className="p-6 sm:p-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-border">
+            <div className="flex items-start gap-4">
+              <div className={cn("rounded-2xl p-3.5 border", config.badgeColor)}>
+                <Icon className="h-7 w-7" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2.5 mb-1">
+                  <Badge variant="outline" className={cn("text-xs font-semibold", config.badgeColor)}>
+                    {config.label}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">T.A. 2025/2026</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold font-serif text-foreground">
+                  {config.description}
+                </h2>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Pendaftar: <span className="font-semibold text-foreground">{registration?.dataPribadi?.namaLengkap || registration?.biodata?.namaLengkap || "Calon Mahasiswa"}</span>
+                </p>
+              </div>
             </div>
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold">{config.label}</h2>
-              <p className="text-muted-foreground">{config.description}</p>
-            </div>
+
+            {registration.noPendaftaran && (
+              <div className="rounded-xl bg-secondary/50 border border-border p-4 text-left sm:text-right shrink-0 w-full md:w-auto">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">
+                  Nomor Pendaftaran
+                </p>
+                <p className="text-lg font-bold font-mono text-primary mt-0.5">
+                  {registration.noPendaftaran}
+                </p>
+              </div>
+            )}
           </div>
 
-          {/* Registration Number */}
-          {registration.noPendaftaran && (
-            <div className="rounded-lg bg-secondary/30 p-4">
-              <p className="text-xs text-muted-foreground mb-1">Nomor Pendaftaran</p>
-              <code className="text-lg font-mono font-semibold">{registration.noPendaftaran}</code>
-            </div>
-          )}
+          {/* Conditional Guidance Alerts */}
+          <div className="pt-6">
+            {currentStatus === "berkas_ditolak" && (
+              <Alert variant="destructive" className="border-destructive/30">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs sm:text-sm">
+                  <p className="font-semibold mb-1">Catatan Tim Verifikator:</p>
+                  <p>Dokumen pindaian Kartu Keluarga atau Ijazah buram atau tidak terbaca. Silakan menuju menu Unggah Berkas untuk mengunggah dokumen perbaikan.</p>
+                  <div className="mt-3">
+                    <Link href="/dashboard/berkas">
+                      <Button size="sm" variant="destructive" className="text-xs gap-1.5">
+                        Perbaiki Dokumen Sekarang
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </Link>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
 
-          {/* Rejection Details */}
-          {currentStatus === "berkas_ditolak" && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <p className="font-semibold mb-1">Alasan Penolakan:</p>
-                <p>Beberapa dokumen tidak sesuai dengan standar. Silakan upload ulang dokumen yang sesuai.</p>
-              </AlertDescription>
-            </Alert>
-          )}
+            {currentStatus === "lulus_seleksi" && (
+              <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-5 text-emerald-950 dark:text-emerald-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <p className="font-serif font-bold text-base sm:text-lg text-emerald-900 dark:text-emerald-200">
+                    Selamat! Anda Dinyatakan Lolos Seleksi PMB
+                  </p>
+                  <p className="text-xs sm:text-sm text-emerald-800 dark:text-emerald-300 mt-1">
+                    SK Kelulusan Rektor telah diterbitkan. Unduh Surat Penerimaan Resmi (Letter of Acceptance) dan selesaikan tahapan registrasi ulang.
+                  </p>
+                </div>
+                <Link href="/dashboard/cetak" className="shrink-0">
+                  <Button size="sm" className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs gap-2">
+                    <Printer className="h-3.5 w-3.5" />
+                    Cetak Bukti Diterima
+                  </Button>
+                </Link>
+              </div>
+            )}
 
-          {/* Success Message */}
-          {currentStatus === "lulus_seleksi" && (
-            <Alert className="bg-green-50 border-green-200">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800">
-                <p className="font-semibold mb-1">Selamat!</p>
-                <p>Anda telah diterima di program studi pilihan. Segera lakukan daftar ulang untuk menyelesaikan proses pendaftaran.</p>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Not Passed Message */}
-          {currentStatus === "tidak_lulus" && (
-            <Alert variant="destructive">
-              <XCircle className="h-4 w-4" />
-              <AlertDescription>
-                <p className="font-semibold mb-1">Mohon Maaf</p>
-                <p>Anda tidak lulus dalam seleksi kali ini. Anda masih dapat mendaftar di gelombang berikutnya.</p>
-              </AlertDescription>
-            </Alert>
-          )}
+            {currentStatus === "draft" && (
+              <div className="rounded-xl bg-secondary/50 border border-border p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <p className="font-semibold text-sm text-foreground">
+                    Formulir Pendaftaran Belum Lengkap
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Lengkapi biodata diri, tentukan program studi pilihan, dan unggah dokumen pendukung agar dapat diproses oleh panitia.
+                  </p>
+                </div>
+                <Link href="/dashboard/biodata" className="shrink-0">
+                  <Button size="sm" className="text-xs gap-1.5 font-semibold">
+                    Lengkapi Biodata
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
-      {/* Timeline */}
-      <Card>
+      {/* Structured Admission Milestones (Interactive Progression) */}
+      <Card className="border border-border shadow-xs">
         <CardHeader>
-          <CardTitle>Tahapan Pendaftaran</CardTitle>
-          <CardDescription>Progres pendaftaran Anda</CardDescription>
+          <CardTitle className="text-lg font-serif">Alur Tahapan Seleksi Masuk</CardTitle>
+          <CardDescription className="text-xs">
+            Rangkaian proses seleksi dari pendaftaran awal hingga penerbitan Nomor Induk Mahasiswa
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-6">
             {statusTimeline.map((step, index) => {
-              const isActive = step.order <= currentOrder
-              const isCurrent = step.id === currentStatus
+              const isPast = step.order < currentOrder
+              const isCurrent = step.id === currentStatus || (step.order === currentOrder)
+              const isFuture = step.order > currentOrder
 
               return (
-                <div key={step.id} className="flex gap-4">
-                  {/* Timeline line and dot */}
+                <div key={step.id} className="flex gap-4 items-start">
+                  {/* Step Marker */}
                   <div className="flex flex-col items-center">
                     <div
-                      className={`h-8 w-8 rounded-full border-2 flex items-center justify-center transition-colors ${
-                        isActive
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-muted-foreground/30 bg-muted"
-                      }`}
+                      className={cn(
+                        "h-8 w-8 rounded-full border-2 flex items-center justify-center text-xs font-mono font-bold transition-colors",
+                        isPast
+                          ? "border-emerald-600 bg-emerald-600 text-white"
+                          : isCurrent
+                          ? "border-primary bg-primary text-primary-foreground shadow-xs ring-4 ring-primary/10"
+                          : "border-border bg-card text-muted-foreground"
+                      )}
                     >
-                      {isActive ? (
-                        <CheckCircle2 className="h-5 w-5" />
+                      {isPast ? (
+                        <CheckCircle2 className="h-4 w-4" />
                       ) : (
-                        <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+                        step.order
                       )}
                     </div>
                     {index < statusTimeline.length - 1 && (
                       <div
-                        className={`w-0.5 h-12 transition-colors ${
-                          isActive ? "bg-primary" : "bg-muted-foreground/20"
-                        }`}
+                        className={cn(
+                          "w-0.5 h-12 my-1 transition-colors",
+                          isPast ? "bg-emerald-600" : "bg-border"
+                        )}
                       />
                     )}
                   </div>
 
-                  {/* Step content */}
-                  <div className="flex-1 pt-1">
-                    <div className="flex items-center gap-2">
-                      <p className={`font-medium ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
+                  {/* Step Description */}
+                  <div className="flex-1 pt-1 pb-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4
+                        className={cn(
+                          "font-bold text-sm",
+                          isCurrent ? "text-primary" : isPast ? "text-foreground" : "text-muted-foreground"
+                        )}
+                      >
                         {step.label}
-                      </p>
+                      </h4>
                       {isCurrent && (
-                        <Badge variant="default" className="text-xs">
-                          Saat ini
+                        <Badge variant="outline" className="text-[10px] py-0 border-primary/30 text-primary">
+                          Tahap Aktif
+                        </Badge>
+                      )}
+                      {isPast && (
+                        <Badge variant="secondary" className="text-[10px] py-0 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30">
+                          Selesai
                         </Badge>
                       )}
                     </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {step.desc}
+                    </p>
                   </div>
                 </div>
               )
@@ -210,99 +304,6 @@ export default function StatusPage() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Status History */}
-      {(registration.statusHistory || []).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Riwayat Status</CardTitle>
-            <CardDescription>Perubahan status pendaftaran Anda</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {(registration.statusHistory || [])
-                .slice()
-                .reverse()
-                .map((history, index) => {
-                  const histConfig = statusConfig[history.status as keyof typeof statusConfig]
-                  return (
-                    <div
-                      key={index}
-                      className="flex items-start gap-3 rounded-lg border p-3"
-                    >
-                      <div className={`rounded-full p-2 ${histConfig.color}`}>
-                        <histConfig.icon className="h-4 w-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium">{histConfig.label}</p>
-                        {history.note && (
-                          <p className="text-sm text-muted-foreground mt-0.5">{history.note}</p>
-                        )}
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(history.timestamp).toLocaleDateString("id-ID", {
-                            weekday: "long",
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  )
-                })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Next Steps */}
-      {currentStatus !== "tidak_lulus" && currentStatus !== "daftar_ulang" && (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Info className="h-4 w-4" />
-              Langkah Berikutnya
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm space-y-3">
-            {currentStatus === "draft" && (
-              <div className="space-y-2">
-                <p>Lengkapi semua tahapan pendaftaran berikut:</p>
-                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                  <li>Isi data biodata lengkap</li>
-                  <li>Upload dokumen yang diperlukan</li>
-                  <li>Pilih program studi dan gelombang</li>
-                  <li>Lakukan pembayaran biaya registrasi</li>
-                  <li>Submit pendaftaran</li>
-                </ul>
-              </div>
-            )}
-
-            {currentStatus === "menunggu_verifikasi" && (
-              <div className="space-y-2">
-                <p>Pendaftaran Anda sedang diproses. Kami akan segera memverifikasi berkas Anda.</p>
-                <p className="font-semibold">Estimasi: 3-5 hari kerja</p>
-              </div>
-            )}
-
-            {currentStatus === "berkas_diterima" && (
-              <div className="space-y-2">
-                <p>Berkas Anda telah diterima. Tunggu pengumuman hasil seleksi.</p>
-                <p className="text-muted-foreground">Jadwal pengumuman akan ditampilkan di halaman ini.</p>
-              </div>
-            )}
-
-            {currentStatus === "lulus_seleksi" && (
-              <div className="space-y-2">
-                <p>Anda lulus seleksi! Segera lakukan daftar ulang untuk menyelesaikan proses pendaftaran.</p>
-                <p className="text-muted-foreground">Batas waktu daftar ulang hingga akhir Agustus 2025.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

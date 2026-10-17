@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -12,7 +12,22 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Search, Eye, Check, X, Loader2, AlertCircle } from "lucide-react"
+import {
+  Search,
+  Eye,
+  Check,
+  X,
+  Loader2,
+  FileText,
+  CreditCard,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  ShieldCheck,
+  RefreshCw,
+  ExternalLink,
+  Users,
+} from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { PRODI_LIST } from "@/lib/mock-data"
 import { useAuth } from "@/contexts/auth-context"
@@ -24,7 +39,9 @@ interface Registrant {
   noPendaftaran: string
   nama: string
   email: string
+  phone: string
   prodi: string
+  prodiId: string
   jalur: string
   status: string
   berkas: RegistrantStatus
@@ -34,14 +51,44 @@ interface Registrant {
   raw?: any
 }
 
+const QUICK_DOC_REASONS = [
+  "Scan ijazah buram atau tidak terbaca",
+  "KTP atau Kartu Keluarga terpotong / tidak jelas",
+  "Nilai rapor belum dilegalisir kepala sekolah",
+  "Pas foto tidak berlatar belakang resmi (merah/biru)",
+  "Surat keterangan sehat belum disertakan",
+  "Dokumen persyaratan tidak sesuai nama pendaftar",
+]
+
+const QUICK_PAYMENT_REASONS = [
+  "Nominal transfer tidak sesuai tagihan registrasi",
+  "Nomor referensi atau tanggal mutasi tidak terbaca",
+  "Nama pemilik rekening pengirim tidak sesuai pendaftar",
+  "Bukti transfer tidak memuat stempel atau validasi bank",
+  "Batas waktu pembayaran tagihan telah kedaluwarsa",
+  "Struk pembayaran buram atau terpotong",
+]
+
 const getStatusBadge = (status: RegistrantStatus) => {
   switch (status) {
     case "approved":
-      return <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/50 hover:bg-emerald-100">Disetujui</Badge>
+      return (
+        <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 font-medium">
+          Disetujui
+        </Badge>
+      )
     case "rejected":
-      return <Badge className="bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/50 hover:bg-rose-100">Ditolak</Badge>
+      return (
+        <Badge className="bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20 font-medium">
+          Ditolak
+        </Badge>
+      )
     case "pending":
-      return <Badge className="bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50 hover:bg-amber-100">Menunggu</Badge>
+      return (
+        <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 font-medium">
+          Menunggu
+        </Badge>
+      )
   }
 }
 
@@ -49,13 +96,30 @@ export default function RegistrantManagement() {
   const { user } = useAuth()
   const [registrants, setRegistrants] = useState<Registrant[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [activeTab, setActiveTab] = useState<string>("list")
+
+  // Filters for General List
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
+
+  // Filters for Verifikasi Berkas
+  const [docsSearch, setDocsSearch] = useState("")
+  const [docsFilterProdi, setDocsFilterProdi] = useState("all")
+  const [docsFilterJalur, setDocsFilterJalur] = useState("all")
+  const [docsFilterStatus, setDocsFilterStatus] = useState("pending")
+
+  // Filters for Verifikasi Pembayaran
+  const [paySearch, setPaySearch] = useState("")
+  const [payFilterBank, setPayFilterBank] = useState("all")
+  const [payFilterStatus, setPayFilterStatus] = useState("pending")
+
+  // Dialog & selection state
   const [selectedRegistrant, setSelectedRegistrant] = useState<Registrant | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [rejectReason, setRejectReason] = useState("")
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
-  const [rejectTarget, setRejectTarget] = useState<{ id: string; type: "berkas" | "pembayaran" } | null>(null)
+  const [rejectTarget, setRejectTarget] = useState<{ id: string; type: "berkas" | "pembayaran"; name?: string } | null>(null)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null)
 
@@ -63,6 +127,15 @@ export default function RegistrantManagement() {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 3000)
   }
+
+  // Auto-route tab based on staff role
+  useEffect(() => {
+    if (user?.role === "verifikator") {
+      setActiveTab("verify-docs")
+    } else if (user?.role === "keuangan") {
+      setActiveTab("verify-payment")
+    }
+  }, [user?.role])
 
   const fetchRegistrants = async () => {
     try {
@@ -98,7 +171,7 @@ export default function RegistrantManagement() {
         const jalur = reg.pilihan_prodi?.[0]?.jalurMasuk?.toUpperCase() || "MANDIRI"
 
         let berkasStatus: RegistrantStatus = "pending"
-        if (reg.status === "berkas_diterima" || reg.status === "lulus_seleksi" || reg.status === "daftar_ulang") {
+        if (["berkas_diterima", "lulus_seleksi", "daftar_ulang"].includes(reg.status)) {
           berkasStatus = "approved"
         } else if (reg.status === "berkas_ditolak") {
           berkasStatus = "rejected"
@@ -116,25 +189,29 @@ export default function RegistrantManagement() {
           noPendaftaran: reg.no_pendaftaran || "DRAFT",
           nama: profile.name || reg.data_pribadi?.namaLengkap || "Calon Mahasiswa",
           email: profile.email || reg.data_pribadi?.email || "",
+          phone: profile.phone || reg.data_pribadi?.noHp || "-",
           prodi: prodiName,
+          prodiId: prodiId,
           jalur: jalur,
           status: reg.status,
           berkas: berkasStatus,
           pembayaran: pembayaranStatus,
           createdAt: new Date(reg.created_at).toLocaleDateString("id-ID"),
-          alasanTolak: reg.status_history?.find((h: any) => h.status === "berkas_ditolak")?.note?.replace("Berkas ditolak: ", "") || reg.pembayaran?.rejectionReason,
+          alasanTolak:
+            reg.status_history?.find((h: any) => h.status === "berkas_ditolak")?.note?.replace("Berkas ditolak: ", "") ||
+            reg.pembayaran?.rejectionReason,
           raw: reg,
         }
       })
 
-      // Sort by creation date
+      // Sort newest first
       mapped.sort((a, b) => new Date(b.raw.created_at).getTime() - new Date(a.raw.created_at).getTime())
-
       setRegistrants(mapped)
     } catch (err) {
       console.error("Exception fetching registrants:", err)
     } finally {
       setIsLoading(false)
+      setIsRefreshing(false)
     }
   }
 
@@ -161,45 +238,111 @@ export default function RegistrantManagement() {
     }
   }, [])
 
-  const filtered = registrants.filter((r) => {
-    const matchesSearch =
-      r.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.noPendaftaran.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.email.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesStatus = filterStatus === "all" || r.berkas === filterStatus
-    return matchesSearch && matchesStatus
-  })
+  const handleManualRefresh = () => {
+    setIsRefreshing(true)
+    fetchRegistrants()
+  }
 
+  // 1. Filtered General List
+  const filteredList = useMemo(() => {
+    return registrants.filter((r) => {
+      const q = searchTerm.toLowerCase()
+      const matchesSearch =
+        r.nama.toLowerCase().includes(q) ||
+        r.noPendaftaran.toLowerCase().includes(q) ||
+        r.email.toLowerCase().includes(q)
+
+      const matchesStatus = filterStatus === "all" || r.berkas === filterStatus
+      return matchesSearch && matchesStatus
+    })
+  }, [registrants, searchTerm, filterStatus])
+
+  // 2. Filtered Documents Verification List
+  const filteredDocs = useMemo(() => {
+    return registrants.filter((r) => {
+      const q = docsSearch.toLowerCase()
+      const matchesSearch =
+        !q ||
+        r.nama.toLowerCase().includes(q) ||
+        r.noPendaftaran.toLowerCase().includes(q) ||
+        r.email.toLowerCase().includes(q)
+
+      const matchesProdi = docsFilterProdi === "all" || r.prodiId === docsFilterProdi
+      const matchesJalur = docsFilterJalur === "all" || r.jalur.toLowerCase() === docsFilterJalur.toLowerCase()
+
+      let matchesStatus = true
+      if (docsFilterStatus === "pending") {
+        matchesStatus = r.berkas === "pending" && r.status === "menunggu_verifikasi"
+      } else if (docsFilterStatus === "approved") {
+        matchesStatus = r.berkas === "approved"
+      } else if (docsFilterStatus === "rejected") {
+        matchesStatus = r.berkas === "rejected"
+      }
+
+      return matchesSearch && matchesProdi && matchesJalur && matchesStatus
+    })
+  }, [registrants, docsSearch, docsFilterProdi, docsFilterJalur, docsFilterStatus])
+
+  // 3. Filtered Payments Verification List
+  const filteredPayments = useMemo(() => {
+    return registrants.filter((r) => {
+      const q = paySearch.toLowerCase()
+      const matchesSearch =
+        !q ||
+        r.nama.toLowerCase().includes(q) ||
+        r.noPendaftaran.toLowerCase().includes(q) ||
+        r.email.toLowerCase().includes(q)
+
+      const bankCode = (r.raw?.pembayaran?.bankCode || r.raw?.pembayaran?.method || "").toUpperCase()
+      const matchesBank = payFilterBank === "all" || bankCode.includes(payFilterBank.toUpperCase())
+
+      let matchesStatus = true
+      if (payFilterStatus === "pending") {
+        matchesStatus = r.pembayaran === "pending" && Boolean(r.raw?.pembayaran?.buktiTransfer)
+      } else if (payFilterStatus === "approved") {
+        matchesStatus = r.pembayaran === "approved"
+      } else if (payFilterStatus === "rejected") {
+        matchesStatus = r.pembayaran === "rejected"
+      } else if (payFilterStatus === "unpaid") {
+        matchesStatus = !r.raw?.pembayaran || r.raw?.pembayaran?.status === "unpaid"
+      }
+
+      return matchesSearch && matchesBank && matchesStatus
+    })
+  }, [registrants, paySearch, payFilterBank, payFilterStatus])
+
+  // Approval / Rejection Handlers
   const handleApproveBerkas = async (id: string) => {
     const target = registrants.find((r) => r.id === id)
     if (!target) return
 
     try {
+      const existingHistory = target.raw?.status_history || []
       const { error } = await supabase
         .from("registrations")
         .update({
           status: "berkas_diterima",
           status_history: [
-            ...target.raw.status_history,
+            ...existingHistory,
             {
               status: "berkas_diterima",
               timestamp: new Date().toISOString(),
-              note: "Berkas persyaratan disetujui oleh verifikator",
+              note: "Berkas persyaratan resmi disetujui oleh tim verifikator.",
             },
           ],
         })
         .eq("id", id)
 
       if (error) throw error
-      showToast("Berkas berhasil diterima")
+      showToast("Berkas persyaratan berhasil disetujui")
+      fetchRegistrants()
     } catch (err: any) {
-      showToast("Gagal menerima berkas: " + err.message, "error")
+      showToast("Gagal menyetujui berkas: " + err.message, "error")
     }
   }
 
-  const handleRejectBerkas = (id: string) => {
-    setRejectTarget({ id, type: "berkas" })
+  const handleOpenRejectBerkas = (r: Registrant) => {
+    setRejectTarget({ id: r.id, type: "berkas", name: r.nama })
     setRejectReason("")
     setRejectDialogOpen(true)
   }
@@ -210,10 +353,11 @@ export default function RegistrantManagement() {
 
     try {
       const updatedPayment = {
-        ...target.raw.pembayaran,
+        ...target.raw?.pembayaran,
         status: "verified",
         verifiedAt: new Date().toISOString(),
       }
+      const existingHistory = target.raw?.status_history || []
 
       const { error } = await supabase
         .from("registrations")
@@ -221,25 +365,26 @@ export default function RegistrantManagement() {
           pembayaran: updatedPayment,
           status: "lulus_seleksi",
           status_history: [
-            ...target.raw.status_history,
+            ...existingHistory,
             {
               status: "lulus_seleksi",
               timestamp: new Date().toISOString(),
-              note: "Pembayaran terverifikasi. Pendaftaran dinyatakan Lulus Seleksi Administrasi",
+              note: "Pembayaran terverifikasi sah. Calon mahasiswa dinyatakan Lulus Seleksi Administrasi.",
             },
           ],
         })
         .eq("id", id)
 
       if (error) throw error
-      showToast("Pembayaran berhasil diverifikasi")
+      showToast("Pembayaran berhasil diverifikasi sah")
+      fetchRegistrants()
     } catch (err: any) {
       showToast("Gagal memverifikasi pembayaran: " + err.message, "error")
     }
   }
 
-  const handleRejectPayment = (id: string) => {
-    setRejectTarget({ id, type: "pembayaran" })
+  const handleOpenRejectPayment = (r: Registrant) => {
+    setRejectTarget({ id: r.id, type: "pembayaran", name: r.nama })
     setRejectReason("")
     setRejectDialogOpen(true)
   }
@@ -250,13 +395,15 @@ export default function RegistrantManagement() {
     if (!target) return
 
     try {
+      const existingHistory = target.raw?.status_history || []
+
       if (rejectTarget.type === "berkas") {
         const { error } = await supabase
           .from("registrations")
           .update({
             status: "berkas_ditolak",
             status_history: [
-              ...target.raw.status_history,
+              ...existingHistory,
               {
                 status: "berkas_ditolak",
                 timestamp: new Date().toISOString(),
@@ -267,10 +414,10 @@ export default function RegistrantManagement() {
           .eq("id", rejectTarget.id)
 
         if (error) throw error
-        showToast("Berkas berhasil ditolak", "error")
+        showToast("Catatan revisi berkas berhasil dikirim", "success")
       } else {
         const updatedPayment = {
-          ...target.raw.pembayaran,
+          ...target.raw?.pembayaran,
           status: "failed",
           rejectionReason: rejectReason,
         }
@@ -280,7 +427,7 @@ export default function RegistrantManagement() {
           .update({
             pembayaran: updatedPayment,
             status_history: [
-              ...target.raw.status_history,
+              ...existingHistory,
               {
                 status: target.raw.status,
                 timestamp: new Date().toISOString(),
@@ -291,10 +438,11 @@ export default function RegistrantManagement() {
           .eq("id", rejectTarget.id)
 
         if (error) throw error
-        showToast("Pembayaran berhasil ditolak", "error")
+        showToast("Bukti pembayaran ditolak, pendaftar diminta transfer ulang", "success")
       }
+      fetchRegistrants()
     } catch (err: any) {
-      showToast("Gagal menolak: " + err.message, "error")
+      showToast("Gagal menyimpan penolakan: " + err.message, "error")
     }
 
     setRejectDialogOpen(false)
@@ -302,25 +450,34 @@ export default function RegistrantManagement() {
   }
 
   const toggleSelect = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    )
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]))
   }
 
   const toggleSelectAll = () => {
-    if (selectedIds.length === filtered.length) {
+    if (selectedIds.length === filteredList.length) {
       setSelectedIds([])
     } else {
-      setSelectedIds(filtered.map((r) => r.id))
+      setSelectedIds(filteredList.map((r) => r.id))
     }
   }
+
+  // Count summaries
+  const countDocsPending = registrants.filter((r) => r.berkas === "pending" && r.status === "menunggu_verifikasi").length
+  const countDocsApproved = registrants.filter((r) => r.berkas === "approved").length
+  const countDocsRejected = registrants.filter((r) => r.berkas === "rejected").length
+
+  const countPayPending = registrants.filter((r) => r.pembayaran === "pending" && r.raw?.pembayaran?.buktiTransfer).length
+  const countPayApproved = registrants.filter((r) => r.pembayaran === "approved").length
+  const totalVerifiedRevenue = registrants
+    .filter((r) => r.pembayaran === "approved")
+    .reduce((sum, r) => sum + (r.raw?.pembayaran?.amount || 350000), 0)
 
   if (isLoading) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground animate-pulse">Menghubungkan ke database...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Memuat data pendaftar...</p>
         </div>
       </div>
     )
@@ -328,128 +485,172 @@ export default function RegistrantManagement() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      {/* Toast */}
+      {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed bottom-6 right-6 z-50 rounded-lg px-5 py-3 text-white shadow-lg transition-all ${
-            toast.type === "success" ? "bg-green-600 animate-in fade-in slide-in-from-bottom-5" : "bg-red-600 animate-in fade-in slide-in-from-bottom-5"
+          className={`fixed bottom-6 right-6 z-50 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg transition-all ${
+            toast.type === "success" ? "bg-emerald-600" : "bg-rose-600"
           }`}
         >
           {toast.msg}
         </div>
       )}
 
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Manajemen Pendaftar</h1>
-        <p className="text-sm text-muted-foreground">Kelola data pendaftar, verifikasi berkas dan pembayaran</p>
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Manajemen & Verifikasi PMB</h1>
+            {user?.role && (
+              <Badge variant="outline" className="text-xs uppercase tracking-wider font-mono">
+                {user.role.replace("_", " ")}
+              </Badge>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Pusat validasi berkas persyaratan calon mahasiswa dan rekonsiliasi transfer biaya pendaftaran
+          </p>
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleManualRefresh}
+          disabled={isRefreshing}
+          className="gap-2 self-start sm:self-auto"
+        >
+          <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+          Segarkan Data
+        </Button>
       </div>
 
-      <Tabs defaultValue="list" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="list">Daftar Pendaftar</TabsTrigger>
-          <TabsTrigger value="verify-docs">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
+        <TabsList className="grid w-full grid-cols-3 max-w-2xl bg-muted/60 p-1 rounded-xl">
+          <TabsTrigger value="list" className="gap-2 text-xs sm:text-sm">
+            <Users className="h-4 w-4" />
+            Semua Pendaftar
+          </TabsTrigger>
+
+          <TabsTrigger value="verify-docs" className="gap-2 text-xs sm:text-sm">
+            <FileText className="h-4 w-4" />
             Verifikasi Berkas
-            {registrants.filter((r) => r.berkas === "pending" && r.status === "menunggu_verifikasi").length > 0 && (
-              <Badge className="ml-2 bg-amber-500 text-white text-xs">
-                {registrants.filter((r) => r.berkas === "pending" && r.status === "menunggu_verifikasi").length}
+            {countDocsPending > 0 && (
+              <Badge className="bg-amber-500 text-white text-[11px] px-1.5 py-0 h-4">
+                {countDocsPending}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="verify-payment">
+
+          <TabsTrigger value="verify-payment" className="gap-2 text-xs sm:text-sm">
+            <CreditCard className="h-4 w-4" />
             Verifikasi Pembayaran
-            {registrants.filter((r) => r.pembayaran === "pending" && r.raw?.pembayaran?.buktiTransfer).length > 0 && (
-              <Badge className="ml-2 bg-amber-500 text-white text-xs">
-                {registrants.filter((r) => r.pembayaran === "pending" && r.raw?.pembayaran?.buktiTransfer).length}
+            {countPayPending > 0 && (
+              <Badge className="bg-emerald-600 text-white text-[11px] px-1.5 py-0 h-4">
+                {countPayPending}
               </Badge>
             )}
           </TabsTrigger>
         </TabsList>
 
-        {/* List Tab */}
+        {/* ============================================================ */}
+        {/* TAB 1: DAFTAR SEMUA PENDAFTAR                                */}
+        {/* ============================================================ */}
         <TabsContent value="list" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Daftar Semua Pendaftar</CardTitle>
-              <CardDescription>Kelola dan filter data pendaftar secara real-time</CardDescription>
+          <Card className="border-border">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg">Database Seluruh Pendaftar PMB</CardTitle>
+              <CardDescription>
+                Daftar lengkap calon mahasiswa terdaftar dengan status berkas dan pembayaran real-time
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-4">
+              {/* Controls */}
+              <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     placeholder="Cari nama, email, atau no. pendaftaran..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9 w-full"
+                    className="pl-9 h-10"
                   />
                 </div>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue />
+                  <SelectTrigger className="w-full sm:w-44 h-10">
+                    <SelectValue placeholder="Status Berkas" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Semua Status</SelectItem>
                     <SelectItem value="pending">Menunggu</SelectItem>
-                    <SelectItem value="approved">Diterima</SelectItem>
+                    <SelectItem value="approved">Disetujui</SelectItem>
                     <SelectItem value="rejected">Ditolak</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {selectedIds.length > 0 && (
-                <div className="flex items-center gap-3 rounded-lg bg-primary/10 px-4 py-2">
-                  <span className="text-sm font-medium text-primary">{selectedIds.length} dipilih</span>
-                  <Button size="sm" variant="outline" onClick={() => setSelectedIds([])}>
+                <div className="flex items-center justify-between rounded-lg bg-primary/10 px-4 py-2">
+                  <span className="text-xs font-semibold text-primary">{selectedIds.length} data pendaftar dipilih</span>
+                  <Button size="sm" variant="ghost" onClick={() => setSelectedIds([])} className="text-xs h-7">
                     Batal Pilih
                   </Button>
                 </div>
               )}
 
-              <div className="rounded-md border">
+              {/* Table */}
+              <div className="rounded-xl border border-border overflow-hidden">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="bg-muted/40">
                     <TableRow>
-                      <TableHead className="w-12">
+                      <TableHead className="w-10">
                         <Checkbox
-                          checked={selectedIds.length === filtered.length && filtered.length > 0}
+                          checked={selectedIds.length === filteredList.length && filteredList.length > 0}
                           onCheckedChange={toggleSelectAll}
                         />
                       </TableHead>
                       <TableHead>No. Pendaftaran</TableHead>
-                      <TableHead>Nama</TableHead>
-                      <TableHead>Email</TableHead>
+                      <TableHead>Nama Calon Mahasiswa</TableHead>
                       <TableHead>Program Studi</TableHead>
+                      <TableHead>Jalur</TableHead>
                       <TableHead>Berkas</TableHead>
                       <TableHead>Pembayaran</TableHead>
-                      <TableHead className="w-20">Aksi</TableHead>
+                      <TableHead className="w-16 text-right">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.length === 0 ? (
+                    {filteredList.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                          Tidak ada data pendaftar yang cocok
+                        <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
+                          Tidak ditemukan data pendaftar yang sesuai kriteria pencarian.
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filtered.map((r) => (
-                        <TableRow key={r.id} className={selectedIds.includes(r.id) ? "bg-secondary/30" : ""}>
+                      filteredList.map((r) => (
+                        <TableRow key={r.id} className={selectedIds.includes(r.id) ? "bg-primary/5" : ""}>
                           <TableCell>
                             <Checkbox
                               checked={selectedIds.includes(r.id)}
                               onCheckedChange={() => toggleSelect(r.id)}
                             />
                           </TableCell>
-                          <TableCell className="font-semibold">{r.noPendaftaran}</TableCell>
-                          <TableCell>{r.nama}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground">{r.email}</TableCell>
-                          <TableCell>{r.prodi}</TableCell>
+                          <TableCell className="font-mono font-semibold text-xs">{r.noPendaftaran}</TableCell>
+                          <TableCell>
+                            <p className="font-semibold text-sm">{r.nama}</p>
+                            <p className="text-xs text-muted-foreground">{r.email}</p>
+                          </TableCell>
+                          <TableCell className="text-xs font-medium">{r.prodi}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-[10px] uppercase font-mono">
+                              {r.jalur}
+                            </Badge>
+                          </TableCell>
                           <TableCell>{getStatusBadge(r.berkas)}</TableCell>
                           <TableCell>{getStatusBadge(r.pembayaran)}</TableCell>
-                          <TableCell>
+                          <TableCell className="text-right">
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="h-8 w-8"
                               onClick={() => {
                                 setSelectedRegistrant(r)
                                 setDetailOpen(true)
@@ -468,81 +669,230 @@ export default function RegistrantManagement() {
           </Card>
         </TabsContent>
 
-        {/* Verify Docs Tab */}
-        <TabsContent value="verify-docs" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Verifikasi Berkas</CardTitle>
-              <CardDescription>Periksa dan verifikasi dokumen calon mahasiswa baru</CardDescription>
+        {/* ============================================================ */}
+        {/* TAB 2: VERIFIKASI BERKAS (VERIFIKATOR WORKSPACE)             */}
+        {/* ============================================================ */}
+        <TabsContent value="verify-docs" className="space-y-5">
+          {/* Metrics summary */}
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+            <Card className="border-border p-4 bg-amber-50/50 dark:bg-amber-950/10 border-amber-500/20">
+              <div className="flex items-center justify-between text-xs text-amber-700 dark:text-amber-400 font-semibold">
+                <span>Antrean Menunggu</span>
+                <Clock className="h-4 w-4" />
+              </div>
+              <div className="text-2xl font-bold font-mono mt-2 text-amber-700 dark:text-amber-400">
+                {countDocsPending}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Perlu diperiksa segera</p>
+            </Card>
+
+            <Card className="border-border p-4 bg-emerald-50/50 dark:bg-emerald-950/10 border-emerald-500/20">
+              <div className="flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-400 font-semibold">
+                <span>Berkas Disetujui</span>
+                <CheckCircle2 className="h-4 w-4" />
+              </div>
+              <div className="text-2xl font-bold font-mono mt-2 text-emerald-700 dark:text-emerald-400">
+                {countDocsApproved}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Persyaratan lengkap sah</p>
+            </Card>
+
+            <Card className="border-border p-4 bg-rose-50/50 dark:bg-rose-950/10 border-rose-500/20">
+              <div className="flex items-center justify-between text-xs text-rose-700 dark:text-rose-400 font-semibold">
+                <span>Perlu Revisi / Ditolak</span>
+                <X className="h-4 w-4" />
+              </div>
+              <div className="text-2xl font-bold font-mono mt-2 text-rose-700 dark:text-rose-400">
+                {countDocsRejected}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Menunggu upload ulang</p>
+            </Card>
+
+            <Card className="border-border p-4">
+              <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold">
+                <span>Total Registran</span>
+                <FileText className="h-4 w-4" />
+              </div>
+              <div className="text-2xl font-bold font-mono mt-2">{registrants.length}</div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Total berkas masuk</p>
+            </Card>
+          </div>
+
+          <Card className="border-border">
+            <CardHeader className="pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <CardTitle className="text-lg">Antrean Pemeriksaan Dokumen</CardTitle>
+                  <CardDescription>
+                    Periksa keabsahan Ijazah, KTP, Kartu Keluarga, dan Rapor calon mahasiswa
+                  </CardDescription>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
+            <CardContent className="space-y-4">
+              {/* Filter controls */}
+              <div className="grid gap-2.5 sm:grid-cols-4">
+                <div className="relative sm:col-span-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Cari nama / no. reg..."
+                    value={docsSearch}
+                    onChange={(e) => setDocsSearch(e.target.value)}
+                    className="pl-9 h-9 text-xs"
+                  />
+                </div>
+
+                <Select value={docsFilterStatus} onValueChange={setDocsFilterStatus}>
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue placeholder="Status Verifikasi" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Menunggu Verifikasi ({countDocsPending})</SelectItem>
+                    <SelectItem value="approved">Sudah Disetujui ({countDocsApproved})</SelectItem>
+                    <SelectItem value="rejected">Ditolak / Revisi ({countDocsRejected})</SelectItem>
+                    <SelectItem value="all">Semua Status</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={docsFilterProdi} onValueChange={setDocsFilterProdi}>
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue placeholder="Pilih Program Studi" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Program Studi</SelectItem>
+                    {PRODI_LIST.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.nama}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={docsFilterJalur} onValueChange={setDocsFilterJalur}>
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue placeholder="Pilih Jalur Masuk" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Jalur Masuk</SelectItem>
+                    <SelectItem value="snbp">SNBP</SelectItem>
+                    <SelectItem value="snbt">SNBT</SelectItem>
+                    <SelectItem value="mandiri">MANDIRI</SelectItem>
+                    <SelectItem value="prestasi">PRESTASI</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Table */}
+              <div className="rounded-xl border border-border overflow-hidden">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="bg-muted/40">
                     <TableRow>
                       <TableHead>No. Pendaftaran</TableHead>
-                      <TableHead>Nama</TableHead>
-                      <TableHead>Program Studi</TableHead>
-                      <TableHead>Jalur</TableHead>
+                      <TableHead>Nama Calon Mahasiswa</TableHead>
+                      <TableHead>Program Studi & Jalur</TableHead>
+                      <TableHead>Kelengkapan Berkas</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Aksi</TableHead>
+                      <TableHead className="text-right">Aksi Verifikator</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {registrants.filter((r) => r.berkas === "pending" && r.status === "menunggu_verifikasi").length === 0 ? (
+                    {filteredDocs.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                          Tidak ada berkas yang menunggu verifikasi
+                        <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                          {docsFilterStatus === "pending"
+                            ? "Tidak ada berkas yang menunggu verifikasi saat ini. Seluruh antrean telah selesai diperiksa."
+                            : "Tidak ditemukan data berkas yang cocok dengan filter yang dipilih."}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      registrants
-                        .filter((r) => r.berkas === "pending" && r.status === "menunggu_verifikasi")
-                        .map((r) => (
+                      filteredDocs.map((r) => {
+                        const docs = r.raw?.documents || []
+                        const totalDocs = docs.length
+                        const uploadedDocs = docs.filter((d: any) => d.file).length
+
+                        return (
                           <TableRow key={r.id}>
-                            <TableCell className="font-semibold">{r.noPendaftaran}</TableCell>
-                            <TableCell>{r.nama}</TableCell>
-                            <TableCell>{r.prodi}</TableCell>
-                            <TableCell>{r.jalur}</TableCell>
+                            <TableCell className="font-mono font-semibold text-xs">{r.noPendaftaran}</TableCell>
                             <TableCell>
-                              <Badge className="bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-100">
-                                Menunggu Verifikasi
+                              <p className="font-semibold text-sm">{r.nama}</p>
+                              <p className="text-xs text-muted-foreground">{r.email}</p>
+                            </TableCell>
+                            <TableCell>
+                              <p className="text-xs font-medium">{r.prodi}</p>
+                              <Badge variant="outline" className="text-[10px] mt-0.5 uppercase font-mono">
+                                {r.jalur}
                               </Badge>
                             </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-1.5 text-xs">
+                                  <span
+                                    className={`inline-block h-2 w-2 rounded-full ${
+                                      uploadedDocs === totalDocs && totalDocs > 0 ? "bg-emerald-500" : "bg-amber-500"
+                                    }`}
+                                  />
+                                  <span className="font-medium text-xs">
+                                    {uploadedDocs}/{totalDocs || 4} Berkas
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                  {docs.slice(0, 3).map((d: any) => (
+                                    <span
+                                      key={d.type}
+                                      className={`text-[10px] px-1.5 py-0.5 rounded border ${
+                                        d.file
+                                          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
+                                          : "bg-muted text-muted-foreground border-border"
+                                      }`}
+                                    >
+                                      {d.type.toUpperCase()}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{getStatusBadge(r.berkas)}</TableCell>
                             <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
+                              <div className="flex items-center justify-end gap-1.5">
                                 <Button
                                   size="sm"
-                                  variant="ghost"
+                                  variant="outline"
+                                  className="h-8 text-xs gap-1"
                                   onClick={() => {
                                     setSelectedRegistrant(r)
                                     setDetailOpen(true)
                                   }}
                                 >
-                                  <Eye className="h-4 w-4 mr-1.5" />
-                                  Detail Berkas
+                                  <Eye className="h-3.5 w-3.5" />
+                                  Periksa
                                 </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200"
-                                  onClick={() => handleRejectBerkas(r.id)}
-                                >
-                                  <X className="h-4 w-4 mr-1" />
-                                  Tolak
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                                  onClick={() => handleApproveBerkas(r.id)}
-                                >
-                                  <Check className="h-4 w-4 mr-1" />
-                                  Terima
-                                </Button>
+
+                                {r.berkas === "pending" && (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8 text-xs text-rose-600 border-rose-200 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                                      onClick={() => handleOpenRejectBerkas(r)}
+                                    >
+                                      <X className="h-3.5 w-3.5 mr-1" />
+                                      Tolak
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                                      onClick={() => handleApproveBerkas(r.id)}
+                                    >
+                                      <Check className="h-3.5 w-3.5 mr-1" />
+                                      Terima
+                                    </Button>
+                                  </>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
-                        ))
+                        )
+                      })
                     )}
                   </TableBody>
                 </Table>
@@ -551,79 +901,198 @@ export default function RegistrantManagement() {
           </Card>
         </TabsContent>
 
-        {/* Verify Payment Tab */}
-        <TabsContent value="verify-payment" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Verifikasi Pembayaran</CardTitle>
-              <CardDescription>Periksa bukti transfer biaya pendaftaran yang diunggah mahasiswa</CardDescription>
+        {/* ============================================================ */}
+        {/* TAB 3: VERIFIKASI PEMBAYARAN (KEUANGAN WORKSPACE)            */}
+        {/* ============================================================ */}
+        <TabsContent value="verify-payment" className="space-y-5">
+          {/* Financial summary metrics */}
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+            <Card className="border-border p-4 bg-emerald-50/50 dark:bg-emerald-950/10 border-emerald-500/20">
+              <div className="flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-400 font-semibold">
+                <span>Penerimaan Terverifikasi</span>
+                <CreditCard className="h-4 w-4" />
+              </div>
+              <div className="text-2xl font-bold font-mono mt-2 text-emerald-700 dark:text-emerald-400">
+                {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(
+                  totalVerifiedRevenue
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Dari {countPayApproved} transaksi lunas</p>
+            </Card>
+
+            <Card className="border-border p-4 bg-amber-50/50 dark:bg-amber-950/10 border-amber-500/20">
+              <div className="flex items-center justify-between text-xs text-amber-700 dark:text-amber-400 font-semibold">
+                <span>Perlu Validasi Mutasi</span>
+                <Clock className="h-4 w-4" />
+              </div>
+              <div className="text-2xl font-bold font-mono mt-2 text-amber-700 dark:text-amber-400">
+                {countPayPending}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Bukti transfer telah diunggah</p>
+            </Card>
+
+            <Card className="border-border p-4">
+              <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold">
+                <span>Belum Melakukan Transfer</span>
+                <AlertTriangle className="h-4 w-4" />
+              </div>
+              <div className="text-2xl font-bold font-mono mt-2">
+                {registrants.filter((r) => !r.raw?.pembayaran || r.raw?.pembayaran?.status === "unpaid").length}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Pendaftar di tahap invoice</p>
+            </Card>
+
+            <Card className="border-border p-4">
+              <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold">
+                <span>Biaya Tagihan PMB</span>
+                <ShieldCheck className="h-4 w-4" />
+              </div>
+              <div className="text-2xl font-bold font-mono mt-2">Rp 350.000</div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Tarif registrasi reguler</p>
+            </Card>
+          </div>
+
+          <Card className="border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Rekonsiliasi Pembayaran Bank</CardTitle>
+              <CardDescription>
+                Cocokkan bukti transfer rekening koran dengan data pendaftar sebelum mengesahkan kelulusan administrasi
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
+            <CardContent className="space-y-4">
+              {/* Filter controls */}
+              <div className="grid gap-2.5 sm:grid-cols-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Cari nama / no. reg..."
+                    value={paySearch}
+                    onChange={(e) => setPaySearch(e.target.value)}
+                    className="pl-9 h-9 text-xs"
+                  />
+                </div>
+
+                <Select value={payFilterStatus} onValueChange={setPayFilterStatus}>
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue placeholder="Status Pembayaran" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Menunggu Validasi ({countPayPending})</SelectItem>
+                    <SelectItem value="approved">Lunas & Disahkan ({countPayApproved})</SelectItem>
+                    <SelectItem value="unpaid">Belum Transfer</SelectItem>
+                    <SelectItem value="rejected">Ditolak / Tidak Sesuai</SelectItem>
+                    <SelectItem value="all">Semua Status</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={payFilterBank} onValueChange={setPayFilterBank}>
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue placeholder="Pilih Bank / Metode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Metode & Bank</SelectItem>
+                    <SelectItem value="BCA">Bank BCA</SelectItem>
+                    <SelectItem value="MANDIRI">Bank Mandiri</SelectItem>
+                    <SelectItem value="BNI">Bank BNI</SelectItem>
+                    <SelectItem value="BRI">Bank BRI</SelectItem>
+                    <SelectItem value="QRIS">QRIS</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Table */}
+              <div className="rounded-xl border border-border overflow-hidden">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="bg-muted/40">
                     <TableRow>
                       <TableHead>No. Pendaftaran</TableHead>
-                      <TableHead>Nama</TableHead>
-                      <TableHead>Program Studi</TableHead>
-                      <TableHead>Jumlah SPP/Registrasi</TableHead>
-                      <TableHead>Metode</TableHead>
-                      <TableHead className="text-right">Aksi</TableHead>
+                      <TableHead>Calon Mahasiswa</TableHead>
+                      <TableHead>Nominal Tagihan</TableHead>
+                      <TableHead>Metode / Bank</TableHead>
+                      <TableHead>Waktu Upload</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Aksi Kasir / Keuangan</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {registrants.filter((r) => r.pembayaran === "pending" && r.raw?.pembayaran?.buktiTransfer).length === 0 ? (
+                    {filteredPayments.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                          Tidak ada bukti pembayaran baru yang diunggah
+                        <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                          {payFilterStatus === "pending"
+                            ? "Seluruh bukti transfer yang masuk telah berhasil divalidasi. Tidak ada pembayaran tertahan."
+                            : "Tidak ditemukan transaksi pembayaran yang cocok dengan filter yang dipilih."}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      registrants
-                        .filter((r) => r.pembayaran === "pending" && r.raw?.pembayaran?.buktiTransfer)
-                        .map((r) => (
+                      filteredPayments.map((r) => {
+                        const pay = r.raw?.pembayaran
+                        const amount = pay?.amount || 350000
+                        const bankName = pay?.bankCode || pay?.method?.replace("_", " ") || "TRANSFER BANK"
+
+                        return (
                           <TableRow key={r.id}>
-                            <TableCell className="font-semibold">{r.noPendaftaran}</TableCell>
-                            <TableCell>{r.nama}</TableCell>
-                            <TableCell>{r.prodi}</TableCell>
-                            <TableCell className="font-medium">
-                              {r.raw?.pembayaran?.amount ? new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(r.raw.pembayaran.amount) : "Rp 350.000"}
+                            <TableCell className="font-mono font-semibold text-xs">{r.noPendaftaran}</TableCell>
+                            <TableCell>
+                              <p className="font-semibold text-sm">{r.nama}</p>
+                              <p className="text-xs text-muted-foreground">{r.prodi}</p>
                             </TableCell>
-                            <TableCell className="uppercase">{r.raw?.pembayaran?.method?.replace("_", " ")}</TableCell>
+                            <TableCell className="font-mono font-bold text-xs text-emerald-700 dark:text-emerald-400">
+                              {new Intl.NumberFormat("id-ID", {
+                                style: "currency",
+                                currency: "IDR",
+                                maximumFractionDigits: 0,
+                              }).format(amount)}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="font-mono text-[10px] uppercase">
+                                {bankName}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {pay?.paidAt ? new Date(pay.paidAt).toLocaleDateString("id-ID") : r.createdAt}
+                            </TableCell>
+                            <TableCell>{getStatusBadge(r.pembayaran)}</TableCell>
                             <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
+                              <div className="flex items-center justify-end gap-1.5">
                                 <Button
                                   size="sm"
                                   variant="outline"
+                                  className="h-8 text-xs gap-1"
                                   onClick={() => {
                                     setSelectedRegistrant(r)
                                     setDetailOpen(true)
                                   }}
                                 >
-                                  <Eye className="h-4 w-4 mr-1" />
+                                  <Eye className="h-3.5 w-3.5" />
                                   Cek Bukti
                                 </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200"
-                                  onClick={() => handleRejectPayment(r.id)}
-                                >
-                                  <X className="h-4 w-4 mr-1" />
-                                  Tolak
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                                  onClick={() => handleApprovePayment(r.id)}
-                                >
-                                  <Check className="h-4 w-4 mr-1" />
-                                  Verifikasi
-                                </Button>
+
+                                {r.pembayaran === "pending" && pay?.buktiTransfer && (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8 text-xs text-rose-600 border-rose-200 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                                      onClick={() => handleOpenRejectPayment(r)}
+                                    >
+                                      <X className="h-3.5 w-3.5 mr-1" />
+                                      Tolak
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                                      onClick={() => handleApprovePayment(r.id)}
+                                    >
+                                      <Check className="h-3.5 w-3.5 mr-1" />
+                                      Validasi
+                                    </Button>
+                                  </>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
-                        ))
+                        )
+                      })
                     )}
                   </TableBody>
                 </Table>
@@ -633,124 +1102,169 @@ export default function RegistrantManagement() {
         </TabsContent>
       </Tabs>
 
-      {/* Detail Dialog */}
+      {/* ============================================================ */}
+      {/* DETAIL DIALOG                                                */}
+      {/* ============================================================ */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Detail Profil & Berkas Pendaftar</DialogTitle>
-            <DialogDescription>Informasi form PMB lengkap dengan data Supabase</DialogDescription>
+            <DialogTitle className="flex items-center justify-between pr-6">
+              <span>Detail Pendaftar & Dokumen PMB</span>
+              {selectedRegistrant && getStatusBadge(selectedRegistrant.berkas)}
+            </DialogTitle>
+            <DialogDescription>
+              Tinjau informasi data pribadi, kelengkapan berkas fisik, dan bukti transfer pembayaran
+            </DialogDescription>
           </DialogHeader>
+
           {selectedRegistrant && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4 bg-secondary/20 p-4 rounded-xl">
+            <div className="space-y-6 pt-2">
+              {/* Profile Overview Card */}
+              <div className="grid grid-cols-2 gap-3.5 bg-muted/30 p-4 rounded-xl border border-border">
                 <div>
-                  <Label className="text-xs text-muted-foreground">No. Pendaftaran</Label>
-                  <div className="font-semibold text-sm">{selectedRegistrant.noPendaftaran}</div>
+                  <Label className="text-[11px] text-muted-foreground uppercase tracking-wider">No. Pendaftaran</Label>
+                  <p className="font-mono font-bold text-sm text-primary">{selectedRegistrant.noPendaftaran}</p>
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">Nama Lengkap</Label>
-                  <div className="font-semibold text-sm">{selectedRegistrant.nama}</div>
+                  <Label className="text-[11px] text-muted-foreground uppercase tracking-wider">Nama Lengkap</Label>
+                  <p className="font-semibold text-sm">{selectedRegistrant.nama}</p>
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">Email</Label>
-                  <div className="text-xs text-primary">{selectedRegistrant.email}</div>
+                  <Label className="text-[11px] text-muted-foreground uppercase tracking-wider">Email Terdaftar</Label>
+                  <p className="text-xs">{selectedRegistrant.email}</p>
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">No. HP/Telepon</Label>
-                  <div className="text-xs">{selectedRegistrant.raw?.profiles?.phone || selectedRegistrant.raw?.data_pribadi?.noHp || "-"}</div>
+                  <Label className="text-[11px] text-muted-foreground uppercase tracking-wider">No. Handphone / WA</Label>
+                  <p className="text-xs font-mono">{selectedRegistrant.phone}</p>
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">Pilihan Program Studi</Label>
-                  <div className="font-semibold text-sm text-primary">{selectedRegistrant.prodi}</div>
+                  <Label className="text-[11px] text-muted-foreground uppercase tracking-wider">Pilihan Program Studi</Label>
+                  <p className="text-xs font-semibold">{selectedRegistrant.prodi}</p>
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">Jalur Masuk</Label>
-                  <div className="font-semibold text-sm uppercase">{selectedRegistrant.jalur}</div>
+                  <Label className="text-[11px] text-muted-foreground uppercase tracking-wider">Jalur Masuk</Label>
+                  <p className="text-xs font-semibold uppercase">{selectedRegistrant.jalur}</p>
                 </div>
               </div>
 
-              {/* Bukti Pembayaran */}
-              {selectedRegistrant.raw?.pembayaran?.buktiTransfer && (
-                <div className="border border-border p-4 rounded-xl space-y-3">
-                  <h3 className="text-sm font-bold text-foreground">Bukti Transaksi Pendaftaran</h3>
-                  <div className="flex items-center gap-3 bg-muted/30 p-2.5 rounded-lg border">
-                    <div className="flex h-10 w-10 items-center justify-center rounded bg-primary/10 text-primary">
-                      📁
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold truncate">{selectedRegistrant.raw.pembayaran.buktiTransfer.name || "bukti-transfer.png"}</p>
-                      <p className="text-[10px] text-muted-foreground">Diunggah: {selectedRegistrant.raw.pembayaran.paidAt ? new Date(selectedRegistrant.raw.pembayaran.paidAt).toLocaleString("id-ID") : "-"}</p>
-                    </div>
-                    <a
-                      href={selectedRegistrant.raw.pembayaran.buktiTransfer.previewUrl || "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary hover:underline font-medium"
-                    >
-                      Buka Dokumen
-                    </a>
-                  </div>
+              {/* Bukti Transfer */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold flex items-center gap-1.5">
+                    <CreditCard className="h-4 w-4 text-primary" />
+                    Status Pembayaran Registrasi
+                  </h3>
+                  {getStatusBadge(selectedRegistrant.pembayaran)}
                 </div>
-              )}
 
-              {/* Uploaded Documents List */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-bold text-foreground">Kelengkapan Berkas Persyaratan</h3>
+                {selectedRegistrant.raw?.pembayaran?.buktiTransfer ? (
+                  <div className="border border-border p-3.5 rounded-xl bg-card space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-semibold">
+                          Nominal:{" "}
+                          <span className="font-mono text-emerald-700 dark:text-emerald-400">
+                            {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(
+                              selectedRegistrant.raw?.pembayaran?.amount || 350000
+                            )}
+                          </span>
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Bank / Metode: {selectedRegistrant.raw?.pembayaran?.bankCode || "TRANSFER BANK"}
+                        </p>
+                      </div>
+                      <a
+                        href={selectedRegistrant.raw?.pembayaran?.buktiTransfer?.previewUrl || "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-primary font-semibold hover:underline"
+                      >
+                        Buka Bukti Asli
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic bg-muted/20 p-3 rounded-lg border border-dashed">
+                    Belum ada bukti pembayaran yang diunggah oleh pendaftar.
+                  </p>
+                )}
+              </div>
+
+              {/* Dokumen Persyaratan */}
+              <div className="space-y-2.5">
+                <h3 className="text-sm font-bold flex items-center gap-1.5">
+                  <FileText className="h-4 w-4 text-primary" />
+                  Pemeriksaan Berkas Persyaratan
+                </h3>
+
                 <div className="space-y-2">
-                  {(selectedRegistrant.raw?.documents || []).map((doc: any) => (
-                    <div key={doc.type} className="flex items-center justify-between border border-border p-3 rounded-lg text-sm">
+                  {(selectedRegistrant.raw?.documents || [
+                    { type: "ijazah", label: "Ijazah / Surat Keterangan Lulus", required: true },
+                    { type: "ktp", label: "KTP / Kartu Keluarga", required: true },
+                    { type: "rapor", label: "Scan Nilai Rapor Semester 1-5", required: true },
+                    { type: "foto", label: "Pas Foto Berwarna 3x4 Resmi", required: true },
+                  ]).map((doc: any) => (
+                    <div
+                      key={doc.type}
+                      className="flex items-center justify-between border border-border p-3 rounded-xl bg-card text-xs"
+                    >
                       <div>
-                        <span className="font-medium text-xs">{doc.label}</span>
-                        {doc.required && <span className="text-red-500 ml-1">*</span>}
+                        <p className="font-semibold text-foreground">
+                          {doc.label} {doc.required && <span className="text-rose-500">*</span>}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground uppercase">{doc.type}</p>
                       </div>
-                      <div>
-                        {doc.file ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded border border-emerald-500/10 font-medium">Tersedia</span>
-                            <a
-                              href={doc.file.previewUrl || "#"}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-primary hover:underline font-semibold"
-                            >
-                              Lihat File
-                            </a>
-                          </div>
-                        ) : (
-                          <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded font-medium">Kosong</span>
-                        )}
-                      </div>
+
+                      {doc.file ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-semibold px-2 py-0.5 rounded border border-emerald-500/20">
+                            Tersedia
+                          </span>
+                          <a
+                            href={doc.file.previewUrl || "#"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary font-semibold hover:underline flex items-center gap-1"
+                          >
+                            Lihat File
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      ) : (
+                        <span className="text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded border">
+                          Belum Diunggah
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Action buttons in dialog */}
-              <div className="border-t border-border pt-4 flex gap-3">
-                {selectedRegistrant.berkas === "pending" && selectedRegistrant.status === "menunggu_verifikasi" && (
+              {/* Action Buttons in Dialog */}
+              <div className="border-t border-border pt-4 flex gap-2.5">
+                {selectedRegistrant.berkas === "pending" && (
                   <>
                     <Button
                       variant="outline"
-                      className="flex-1 gap-1 text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200"
+                      className="flex-1 text-xs text-rose-600 border-rose-200 hover:bg-rose-50 dark:hover:bg-rose-950/20"
                       onClick={() => {
                         setDetailOpen(false)
-                        handleRejectBerkas(selectedRegistrant.id)
+                        handleOpenRejectBerkas(selectedRegistrant)
                       }}
                     >
-                      <X className="h-4 w-4" />
-                      Tolak Dokumen
+                      <X className="h-3.5 w-3.5 mr-1" />
+                      Tolak / Minta Revisi Berkas
                     </Button>
                     <Button
-                      className="flex-1 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
                       onClick={() => {
                         handleApproveBerkas(selectedRegistrant.id)
-                        setSelectedRegistrant((prev) =>
-                          prev ? { ...prev, berkas: "approved", status: "Berkas Diterima" } : null
-                        )
+                        setDetailOpen(false)
                       }}
                     >
-                      <Check className="h-4 w-4" />
-                      Approve Dokumen
+                      <Check className="h-3.5 w-3.5 mr-1" />
+                      Setujui Semua Berkas
                     </Button>
                   </>
                 )}
@@ -759,34 +1273,26 @@ export default function RegistrantManagement() {
                   <>
                     <Button
                       variant="outline"
-                      className="flex-1 gap-1 text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200"
+                      className="flex-1 text-xs text-rose-600 border-rose-200 hover:bg-rose-50 dark:hover:bg-rose-950/20"
                       onClick={() => {
                         setDetailOpen(false)
-                        handleRejectPayment(selectedRegistrant.id)
+                        handleOpenRejectPayment(selectedRegistrant)
                       }}
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3.5 w-3.5 mr-1" />
                       Tolak Bukti Transfer
                     </Button>
                     <Button
-                      className="flex-1 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
                       onClick={() => {
                         handleApprovePayment(selectedRegistrant.id)
-                        setSelectedRegistrant((prev) =>
-                          prev ? { ...prev, pembayaran: "approved", status: "lulus_seleksi" } : null
-                        )
+                        setDetailOpen(false)
                       }}
                     >
-                      <Check className="h-4 w-4" />
-                      Verifikasi Transfer
+                      <Check className="h-3.5 w-3.5 mr-1" />
+                      Sahkan Pembayaran Lunas
                     </Button>
                   </>
-                )}
-
-                {selectedRegistrant.berkas === "approved" && selectedRegistrant.pembayaran === "approved" && (
-                  <div className="flex-1 rounded-xl bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900/50 p-3 text-center text-xs text-emerald-700 dark:text-emerald-400 font-bold">
-                    ✓ Verifikasi Berkas & Pembayaran Lengkap
-                  </div>
                 )}
               </div>
             </div>
@@ -794,39 +1300,73 @@ export default function RegistrantManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* Reject Reason Dialog */}
+      {/* ============================================================ */}
+      {/* QUICK REASON REJECTION DIALOG (WITH ONE-CLICK CHIPS)          */}
+      {/* ============================================================ */}
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              Berikan Catatan Penolakan {rejectTarget?.type === "berkas" ? "Berkas" : "Pembayaran"}
+              Catatan Penolakan {rejectTarget?.type === "berkas" ? "Berkas Fisik" : "Bukti Pembayaran"}
             </DialogTitle>
             <DialogDescription>
-              Tuliskan alasan penolakan secara spesifik agar calon mahasiswa dapat merevisi di dashboard mereka.
+              {rejectTarget?.name ? `Untuk calon mahasiswa: ${rejectTarget.name}. ` : ""}
+              Pilih alasan cepat atau ketik instruksi perbaikan spesifik di bawah ini.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label className="text-xs font-bold">Catatan Verifikasi</Label>
+
+          <div className="space-y-4 pt-1">
+            {/* Quick Reason Chips */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">Pilihan Alasan Cepat (1-Klik Isi):</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {(rejectTarget?.type === "berkas" ? QUICK_DOC_REASONS : QUICK_PAYMENT_REASONS).map((reason) => (
+                  <button
+                    key={reason}
+                    type="button"
+                    onClick={() => setRejectReason(reason)}
+                    className="text-[11px] px-2.5 py-1 rounded-md border border-border bg-secondary/40 text-foreground hover:bg-primary/10 hover:border-primary/40 hover:text-primary transition-all text-left"
+                  >
+                    + {reason}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Textarea */}
+            <div className="space-y-1.5">
+              <Label htmlFor="rejectNote" className="text-xs font-semibold">
+                Instruksi Perbaikan Detail
+              </Label>
               <Textarea
-                placeholder="Contoh: Bukti transfer terpotong atau pas foto bukan latar merah..."
-                rows={4}
+                id="rejectNote"
+                rows={3}
+                placeholder="Tuliskan catatan perbaikan yang jelas agar pendaftar paham..."
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                className="mt-1"
+                className="text-xs"
               />
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setRejectDialogOpen(false)}>
+
+            {/* Action buttons */}
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1 text-xs"
+                onClick={() => {
+                  setRejectDialogOpen(false)
+                  setRejectTarget(null)
+                }}
+              >
                 Batal
               </Button>
               <Button
                 variant="destructive"
-                className="flex-1"
+                className="flex-1 text-xs"
                 disabled={!rejectReason.trim()}
                 onClick={handleConfirmReject}
               >
-                Kirim Alasan Penolakan
+                Kirim Catatan Penolakan
               </Button>
             </div>
           </div>

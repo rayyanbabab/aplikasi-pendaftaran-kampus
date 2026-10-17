@@ -269,7 +269,7 @@ export default function AnnouncementsPage() {
         {/* Pengumuman Tab */}
         <TabsContent value="pengumuman" className="space-y-4">
           <div className="flex justify-between items-center">
-            <CardDescription>Kelola pengumuman untuk pendaftar — realtime dari database</CardDescription>
+            <CardDescription>Kelola pengumuman untuk pendaftar (realtime dari database)</CardDescription>
             <Dialog open={pengumumanOpen} onOpenChange={setPengumumanOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="gap-2"><Plus className="h-4 w-4" />Buat Pengumuman</Button>
@@ -515,7 +515,7 @@ export default function AnnouncementsPage() {
 
         {/* Log Notifikasi Tab */}
         <TabsContent value="notifikasi" className="space-y-4">
-          <CardDescription>Log semua notifikasi yang telah dikirim — realtime</CardDescription>
+          <CardDescription>Log semua notifikasi yang telah dikirim (realtime)</CardDescription>
           <Card>
             <CardContent className="pt-6">
               {allLogs.length === 0 ? (

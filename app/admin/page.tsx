@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { TrendingUp, Users, CheckCircle, Clock, ShieldAlert, Award, CreditCard, Sparkles, FileText, CheckCircle2, ChevronRight, Loader2, RefreshCw } from "lucide-react"
+import { TrendingUp, Users, CheckCircle, Clock, ShieldAlert, Award, CreditCard, FileText, CheckCircle2, ChevronRight, Loader2, RefreshCw, ArrowRight, ShieldCheck, Check, X } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase"
 import { PRODI_LIST } from "@/lib/mock-data"
@@ -216,8 +216,10 @@ export default function AdminDashboard() {
     return (
       <div className="flex h-[80vh] items-center justify-center p-6">
         <div className="max-w-lg w-full rounded-2xl border border-destructive/30 bg-destructive/5 p-8 text-center space-y-4">
-          <div className="text-5xl">🔒</div>
-          <h2 className="text-xl font-bold text-destructive">Akses Data Diblokir</h2>
+          <div className="h-12 w-12 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
+            <ShieldAlert className="h-6 w-6" />
+          </div>
+          <h2 className="text-xl font-bold text-destructive">Akses Data Terbatas</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">{rlsError}</p>
           <div className="rounded-xl bg-muted p-4 text-left text-xs font-mono text-muted-foreground space-y-1">
             <p className="font-bold text-foreground">Langkah perbaikan:</p>
@@ -240,14 +242,14 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6 p-6 lg:p-8 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-6 border-b border-border">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            Dashboard Utama
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-foreground">
+            Pusat Kendali Administrasi PMB
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Selamat datang, <span className="font-semibold text-foreground">{user?.name}</span> •{" "}
-            <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full font-medium">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+            Petugas Aktif: <span className="font-semibold text-foreground">{user?.name}</span> •{" "}
+            <span className="text-xs font-mono font-medium text-primary">
               {ROLE_LABELS[role] || role}
             </span>
           </p>
@@ -275,172 +277,290 @@ export default function AdminDashboard() {
       {/* 1. VERIFIKATOR DASHBOARD */}
       {role === "verifikator" && (
         <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card className="border-l-4 border-l-amber-500 bg-amber-50/10 dark:bg-amber-950/5">
+          {/* Metrics */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="border border-border bg-card shadow-xs">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Antrian Berkas Masuk</CardTitle>
+                <CardTitle className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Antrean Masuk</CardTitle>
                 <Clock className="h-5 w-5 text-amber-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{pendingVerification}</div>
-                <p className="text-xs text-muted-foreground mt-1">Menunggu pemeriksaan Anda</p>
+                <div className="text-3xl font-bold font-mono">{pendingVerification}</div>
+                <p className="text-xs text-muted-foreground mt-1">Menunggu pemeriksaan berkas</p>
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-emerald-500 bg-emerald-50/10 dark:bg-emerald-950/5">
+            <Card className="border border-border bg-card shadow-xs">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Telah Diverifikasi</CardTitle>
+                <CardTitle className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Berkas Disetujui</CardTitle>
                 <CheckCircle2 className="h-5 w-5 text-emerald-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">
-                  {registrations.filter(r => ["berkas_diterima", "lulus_seleksi", "daftar_ulang"].includes(r.status)).length}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Berkas persyaratan disetujui</p>
+                <div className="text-3xl font-bold font-mono">{totalAccepted}</div>
+                <p className="text-xs text-muted-foreground mt-1">Dokumen pendaftar sah</p>
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-rose-500 bg-rose-50/10 dark:bg-rose-950/5">
+            <Card className="border border-border bg-card shadow-xs">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Berkas Ditolak</CardTitle>
+                <CardTitle className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Perlu Revisi</CardTitle>
                 <ShieldAlert className="h-5 w-5 text-rose-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{totalRejected}</div>
-                <p className="text-xs text-muted-foreground mt-1">Perlu direvisi oleh calon mhs</p>
+                <div className="text-3xl font-bold font-mono">{totalRejected}</div>
+                <p className="text-xs text-muted-foreground mt-1">Dokumen ditolak / diperbaiki</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-border bg-card shadow-xs">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Total Terdaftar</CardTitle>
+                <Users className="h-5 w-5 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold font-mono">{registrations.length}</div>
+                <p className="text-xs text-muted-foreground mt-1">Tingkat kelulusan berkas: {acceptanceRate}%</p>
               </CardContent>
             </Card>
           </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Antrian Verifikasi Dokumen Terbaru</CardTitle>
-                <CardDescription>Segera periksa kelengkapan file calon mahasiswa</CardDescription>
-              </div>
-              <Link href="/admin/registrants">
-                <Button size="sm" variant="outline" className="gap-1.5">
-                  Semua Berkas
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {registrations.filter(r => r.status === "menunggu_verifikasi").length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground text-sm">
-                    🎉 Luar biasa! Semua antrian berkas sudah selesai diverifikasi.
-                  </div>
-                ) : (
-                  registrations
-                    .filter(r => r.status === "menunggu_verifikasi")
-                    .slice(0, 5)
-                    .map((r, index) => (
-                      <div key={r.id} className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0">
-                        <div>
-                          <p className="font-semibold text-sm">{r.profiles?.name || r.data_pribadi?.namaLengkap || "Calon Mahasiswa"}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Prodi: {PRODI_LIST.find(p => p.id === r.pilihan_prodi?.[0]?.prodiId)?.nama || "Belum Memilih"} • Jalur: {r.pilihan_prodi?.[0]?.jalurMasuk?.toUpperCase() || "MANDIRI"}
-                          </p>
+          {/* Quick Queue & SOP Guide */}
+          <div className="grid gap-6 lg:grid-cols-3">
+            <Card className="lg:col-span-2 border border-border shadow-xs">
+              <CardHeader className="flex flex-row items-center justify-between pb-3">
+                <div>
+                  <CardTitle className="text-base font-bold">Antrean Verifikasi Dokumen Masuk</CardTitle>
+                  <CardDescription className="text-xs">Prioritas peninjauan berkas calon mahasiswa baru</CardDescription>
+                </div>
+                <Link href="/admin/registrants">
+                  <Button size="sm" variant="outline" className="gap-1.5 text-xs h-8">
+                    Buka Workspace Lengkap
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {registrations.filter((r) => r.status === "menunggu_verifikasi").length === 0 ? (
+                    <div className="text-center py-10 text-muted-foreground text-sm border rounded-xl border-dashed">
+                      <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2 opacity-80" />
+                      <p className="font-semibold text-foreground">Semua Berkas Telah Selesai Diperiksa</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Tidak ada antrean tertahan saat ini.</p>
+                    </div>
+                  ) : (
+                    registrations
+                      .filter((r) => r.status === "menunggu_verifikasi")
+                      .slice(0, 6)
+                      .map((r) => (
+                        <div
+                          key={r.id}
+                          className="flex items-center justify-between p-3 rounded-xl border border-border bg-card hover:bg-muted/30 transition-colors"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-sm">
+                                {r.profiles?.name || r.data_pribadi?.namaLengkap || "Calon Mahasiswa"}
+                              </span>
+                              <Badge variant="outline" className="text-[10px] font-mono uppercase">
+                                {r.pilihan_prodi?.[0]?.jalurMasuk?.toUpperCase() || "MANDIRI"}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {PRODI_LIST.find((p) => p.id === r.pilihan_prodi?.[0]?.prodiId)?.nama || "Belum Memilih"} •{" "}
+                              {r.created_at ? new Date(r.created_at).toLocaleDateString("id-ID") : "-"}
+                            </p>
+                          </div>
+                          <Link href="/admin/registrants">
+                            <Button size="sm" variant="outline" className="text-xs h-8 gap-1 text-primary">
+                              Periksa
+                              <ArrowRight className="h-3 w-3" />
+                            </Button>
+                          </Link>
                         </div>
-                        <Link href="/admin/registrants">
-                          <Button size="sm" variant="outline">
-                            Periksa Berkas
-                          </Button>
-                        </Link>
-                      </div>
-                    ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                      ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* SOP Verifikator Card */}
+            <Card className="border border-border shadow-xs bg-muted/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                  SOP Standar Verifikasi
+                </CardTitle>
+                <CardDescription className="text-xs">Panduan kriteria kelayakan dokumen PMB</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3.5 text-xs text-muted-foreground">
+                <div className="border-b border-border pb-2.5">
+                  <p className="font-semibold text-foreground">1. Ijazah / SKL Resmi</p>
+                  <p className="text-[11px] mt-0.5">Wajib mencantumkan nomor seri ijazah dan legalisir basah/digital.</p>
+                </div>
+                <div className="border-b border-border pb-2.5">
+                  <p className="font-semibold text-foreground">2. Kartu Keluarga / KTP</p>
+                  <p className="text-[11px] mt-0.5">NIK 16 digit harus cocok dengan identitas pada biodata pendaftar.</p>
+                </div>
+                <div className="border-b border-border pb-2.5">
+                  <p className="font-semibold text-foreground">3. Transkrip Nilai Rapor</p>
+                  <p className="text-[11px] mt-0.5">Semester 1-5 tertera jelas dengan pengesahan dari pihak sekolah.</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">4. Pas Foto Formal</p>
+                  <p className="text-[11px] mt-0.5">Format 3x4 berwarna dengan latar belakang resmi (merah atau biru).</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
 
       {/* 2. KEUANGAN DASHBOARD */}
       {role === "keuangan" && (
         <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card className="border-l-4 border-l-emerald-600 bg-emerald-50/10 dark:bg-emerald-950/5">
+          {/* Metrics */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="border border-border bg-card shadow-xs">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Total Pendapatan Terverifikasi</CardTitle>
+                <CardTitle className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Total Penerimaan</CardTitle>
                 <CreditCard className="h-5 w-5 text-emerald-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+                <div className="text-2xl lg:text-3xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
                   {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(totalRevenue)}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Dari {verifiedPaymentsCount} pendaftar</p>
+                <p className="text-xs text-muted-foreground mt-1">Dari {verifiedPaymentsCount} transaksi terverifikasi</p>
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-amber-500 bg-amber-50/10 dark:bg-amber-950/5">
+            <Card className="border border-border bg-card shadow-xs">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Verifikasi Pembayaran Pending</CardTitle>
+                <CardTitle className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Validasi Pending</CardTitle>
                 <Clock className="h-5 w-5 text-amber-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{pendingPaymentsCount}</div>
-                <p className="text-xs text-muted-foreground mt-1">Bukti transfer sudah diunggah</p>
+                <div className="text-3xl font-bold font-mono">{pendingPaymentsCount}</div>
+                <p className="text-xs text-muted-foreground mt-1">Bukti transfer menunggu verifikasi bank</p>
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-blue-500 bg-blue-50/10 dark:bg-blue-950/5">
+            <Card className="border border-border bg-card shadow-xs">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Belum Melakukan Transfer</CardTitle>
                 <Users className="h-5 w-5 text-blue-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">
-                  {registrations.filter(r => !r.pembayaran || r.pembayaran.status === "unpaid").length}
+                <div className="text-3xl font-bold font-mono">
+                  {registrations.filter((r) => !r.pembayaran || r.pembayaran.status === "unpaid").length}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Calon mhs di tahap tagihan</p>
+                <p className="text-xs text-muted-foreground mt-1">Pendaftar di tahap invoice tagihan</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-border bg-card shadow-xs">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Tarif Pendaftaran</CardTitle>
+                <ShieldCheck className="h-5 w-5 text-slate-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold font-mono">Rp 350.000</div>
+                <p className="text-xs text-muted-foreground mt-1">Biaya formulir & ujian seleksi PMB</p>
               </CardContent>
             </Card>
           </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Bukti Pembayaran Perlu Validasi</CardTitle>
-                <CardDescription>Periksa kecocokan nominal bukti transfer bank</CardDescription>
-              </div>
-              <Link href="/admin/registrants">
-                <Button size="sm" variant="outline" className="gap-1.5">
-                  Verifikasi Pembayaran
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {registrations.filter(r => r.pembayaran?.status === "pending" && r.pembayaran?.buktiTransfer).length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground text-sm">
-                    💼 Semua bukti transfer yang masuk telah berhasil divalidasi.
-                  </div>
-                ) : (
-                  registrations
-                    .filter(r => r.pembayaran?.status === "pending" && r.pembayaran?.buktiTransfer)
-                    .slice(0, 5)
-                    .map((r) => (
-                      <div key={r.id} className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0">
-                        <div>
-                          <p className="font-semibold text-sm">{r.profiles?.name || r.data_pribadi?.namaLengkap || "Calon Mahasiswa"}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Nominal: {r.pembayaran?.amount ? new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(r.pembayaran.amount) : "Rp 350.000"} • Bank: {r.pembayaran?.bankCode || "QRIS"}
-                          </p>
+          {/* Quick Payments Queue & SOP Card */}
+          <div className="grid gap-6 lg:grid-cols-3">
+            <Card className="lg:col-span-2 border border-border shadow-xs">
+              <CardHeader className="flex flex-row items-center justify-between pb-3">
+                <div>
+                  <CardTitle className="text-base font-bold">Bukti Transfer Membutuhkan Validasi Kasir</CardTitle>
+                  <CardDescription className="text-xs">Cocokkan nomor mutasi rekening koran bank penerima</CardDescription>
+                </div>
+                <Link href="/admin/registrants">
+                  <Button size="sm" variant="outline" className="gap-1.5 text-xs h-8">
+                    Workspace Keuangan
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {registrations.filter((r) => r.pembayaran?.status === "pending" && r.pembayaran?.buktiTransfer).length === 0 ? (
+                    <div className="text-center py-10 text-muted-foreground text-sm border rounded-xl border-dashed">
+                      <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2 opacity-80" />
+                      <p className="font-semibold text-foreground">Semua Bukti Transfer Telah Tervalidasi</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Tidak ada tagihan tertahan di antrean kasir.</p>
+                    </div>
+                  ) : (
+                    registrations
+                      .filter((r) => r.pembayaran?.status === "pending" && r.pembayaran?.buktiTransfer)
+                      .slice(0, 6)
+                      .map((r) => (
+                        <div
+                          key={r.id}
+                          className="flex items-center justify-between p-3 rounded-xl border border-border bg-card hover:bg-muted/30 transition-colors"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-sm">
+                                {r.profiles?.name || r.data_pribadi?.namaLengkap || "Calon Mahasiswa"}
+                              </span>
+                              <Badge variant="outline" className="text-[10px] font-mono uppercase">
+                                {r.pembayaran?.bankCode || "QRIS"}
+                              </Badge>
+                            </div>
+                            <p className="text-xs font-mono font-medium text-emerald-600 dark:text-emerald-400">
+                              {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(
+                                r.pembayaran?.amount || 350000
+                              )}{" "}
+                              <span className="text-muted-foreground font-sans font-normal">
+                                • {r.pembayaran?.paidAt ? new Date(r.pembayaran.paidAt).toLocaleDateString("id-ID") : "Hari ini"}
+                              </span>
+                            </p>
+                          </div>
+                          <Link href="/admin/registrants">
+                            <Button size="sm" variant="outline" className="text-xs h-8 gap-1 text-primary">
+                              Validasi
+                              <ArrowRight className="h-3 w-3" />
+                            </Button>
+                          </Link>
                         </div>
-                        <Link href="/admin/registrants">
-                          <Button size="sm" variant="outline" className="text-primary hover:bg-primary/5">
-                            Cek Mutasi
-                          </Button>
-                        </Link>
-                      </div>
-                    ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                      ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* SOP Keuangan Card */}
+            <Card className="border border-border shadow-xs bg-muted/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                  SOP Validasi Keuangan
+                </CardTitle>
+                <CardDescription className="text-xs">Panduan rekonsiliasi kas dan perbankan</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3.5 text-xs text-muted-foreground">
+                <div className="border-b border-border pb-2.5">
+                  <p className="font-semibold text-foreground">1. Verifikasi Nomor Referensi</p>
+                  <p className="text-[11px] mt-0.5">Pastikan nomor transaksi pada struk bank sesuai dengan data mutasi online.</p>
+                </div>
+                <div className="border-b border-border pb-2.5">
+                  <p className="font-semibold text-foreground">2. Kesesuaian Nominal Tagihan</p>
+                  <p className="text-[11px] mt-0.5">Jumlah dana yang masuk wajib tepat sesuai tagihan registrasi (Rp 350.000).</p>
+                </div>
+                <div className="border-b border-border pb-2.5">
+                  <p className="font-semibold text-foreground">3. Identitas Pengirim & Siswa</p>
+                  <p className="text-[11px] mt-0.5">Cocokkan nama pemilik rekening pengirim atau berita transfer dengan pendaftar.</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">4. Batas Waktu Verifikasi</p>
+                  <p className="text-[11px] mt-0.5">Maksimal validasi dana masuk adalah 1x24 jam kerja sejak bukti diunggah.</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
 
@@ -448,37 +568,37 @@ export default function AdminDashboard() {
       {role === "penguji" && (
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-3">
-            <Card className="border-l-4 border-l-violet-600 bg-violet-50/10 dark:bg-violet-950/5">
+            <Card className="border border-border bg-card shadow-xs">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-xs font-bold text-violet-700 dark:text-violet-400 uppercase tracking-wider">Jadwal Ujian Aktif</CardTitle>
                 <Award className="h-5 w-5 text-violet-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">1</div>
+                <div className="text-3xl font-bold font-mono">1</div>
                 <p className="text-xs text-muted-foreground mt-1">Ujian CBT Berjalan</p>
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-emerald-500 bg-emerald-50/10 dark:bg-emerald-950/5">
+            <Card className="border border-border bg-card shadow-xs">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Peserta Terdaftar</CardTitle>
                 <Users className="h-5 w-5 text-emerald-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">
+                <div className="text-3xl font-bold font-mono">
                   {registrations.filter(r => r.status === "lulus_seleksi").length}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">Siap mengikuti ujian seleksi</p>
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-rose-500 bg-rose-50/10 dark:bg-rose-950/5">
+            <Card className="border border-border bg-card shadow-xs">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Nilai Perlu Diinput</CardTitle>
                 <Clock className="h-5 w-5 text-rose-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">0</div>
+                <div className="text-3xl font-bold font-mono">0</div>
                 <p className="text-xs text-muted-foreground mt-1">Peserta menunggu input nilai</p>
               </CardContent>
             </Card>
@@ -569,19 +689,19 @@ export default function AdminDashboard() {
 
           {/* Quick Access Card for Super Admin */}
           {role === "super_admin" && (
-            <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20">
-              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <Card className="border border-border bg-card shadow-xs">
+              <CardHeader className="pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <CardTitle className="text-base font-bold flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                    Manajemen Pengguna Aplikasi (Database)
+                    <Users className="h-4 w-4 text-primary" />
+                    Manajemen Pengguna & Hak Akses Staf
                   </CardTitle>
-                  <CardDescription>
-                    Kelola level hak akses (roles) untuk staff PMB, keuangan, verifikator, dan penguji.
+                  <CardDescription className="text-xs">
+                    Kelola level otorisasi roles untuk staf PMB, keuangan, verifikator berkas, dan tim penguji.
                   </CardDescription>
                 </div>
                 <Link href="/admin/users">
-                  <Button size="sm" className="shadow-sm font-semibold">
+                  <Button size="sm" variant="outline" className="text-xs font-semibold">
                     Kelola User ({profilesCount})
                   </Button>
                 </Link>

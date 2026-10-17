@@ -51,7 +51,7 @@ async function upsertSetting(key: string, value: unknown) {
   return supabase.from("pmb_settings").upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" })
 }
 
-// Helper: get all items from a key — always returns a safe array
+// Helper: get all items from a key, always returns a safe array
 async function getSettingItems(key: string): Promise<any[]> {
   const { data, error } = await supabase
     .from("pmb_settings")
@@ -120,7 +120,7 @@ export default function PMBManagement() {
       setTahunAkademik(Array.isArray(t) ? t : [])
     } catch (err) {
       console.error("Error fetching PMB settings:", err)
-      // Pastikan state tidak crash — set semua ke array kosong
+      // Pastikan state tidak crash: set semua ke array kosong
       setGelombang([])
       setJalurMasuk([])
       setKuota([])
@@ -306,7 +306,7 @@ export default function PMBManagement() {
         {/* Gelombang */}
         <TabsContent value="gelombang" className="space-y-4">
           <div className="flex justify-between items-center">
-            <CardDescription>Kelola gelombang pendaftaran — data tersimpan di database</CardDescription>
+            <CardDescription>Kelola gelombang pendaftaran (data tersimpan di database)</CardDescription>
             <Dialog open={gOpen} onOpenChange={setGOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="gap-2" onClick={() => { setGForm({ nama: "", mulai: "", selesai: "", status: "Aktif" }); setGEditId(null) }}>

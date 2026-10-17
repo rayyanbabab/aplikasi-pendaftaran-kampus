@@ -1,15 +1,15 @@
 import type { Metadata } from 'next'
 import { Inter, Sora } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
 const _inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 const _sora = Sora({ subsets: ["latin"], variable: "--font-serif", display: "swap" });
 
 export const metadata: Metadata = {
-  title: 'Aplikasi Pendaftaran Kampus - PMB',
-  description: 'Sistem Penerimaan Mahasiswa Baru (PMB) untuk pendaftaran kuliah dengan berbagai jalur masuk',
-  generator: 'v0.app',
+  title: 'Portal Penerimaan Mahasiswa Baru - Universitas Nusantara',
+  description: 'Portal resmi pendaftaran mahasiswa baru Universitas Nusantara dengan verifikasi digital, tes rekomendasi program studi, dan CBT online.',
   icons: {
     icon: [
       {
@@ -35,9 +35,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="id" className={`bg-background ${_inter.variable} ${_sora.variable}`}>
-      <body className="font-sans antialiased">
-        {children}
+    <html lang="id" className={`${_inter.variable} ${_sora.variable}`} suppressHydrationWarning>
+      <body className="font-sans antialiased bg-background text-foreground">
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+          {children}
+        </ThemeProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

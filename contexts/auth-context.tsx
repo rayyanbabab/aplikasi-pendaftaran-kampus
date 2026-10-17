@@ -156,7 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (cancelled) return
 
-        // Tangani refresh token kedaluwarsa — bersihkan sesi yang tidak valid
+        // Tangani refresh token kedaluwarsa: bersihkan sesi yang tidak valid
         if (sessionError) {
           const msg = sessionError.message || ""
           if (
@@ -171,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             removeStorageItem(STORAGE_KEYS.SESSION)
             return
           }
-          // Error sesi lainnya — biarkan localStorage tetap (offline tolerance)
+          // Error sesi lainnya: biarkan localStorage tetap (offline tolerance)
           console.warn("[Auth] Gagal mendapatkan sesi:", msg)
           return
         }
@@ -191,7 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setStorageItem(STORAGE_KEYS.SESSION, session.access_token)
           }
         } else {
-          // Tidak ada session Supabase yang valid — clear semua
+          // Tidak ada session Supabase yang valid: clear semua
           setUser(null)
           removeStorageItem(STORAGE_KEYS.USER)
           removeStorageItem(STORAGE_KEYS.SESSION)
@@ -247,7 +247,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchProfile, buildUserFromAuth])
 
   // ============================================================
-  // LOGIN — hanya via Supabase Auth
+  // LOGIN: hanya via Supabase Auth
   // ============================================================
   const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string; user?: User }> => {
     try {

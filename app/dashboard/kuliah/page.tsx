@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
 export default function KuliahPage() {
@@ -69,12 +70,12 @@ export default function KuliahPage() {
     )
 
     if (isDuplicate) {
-      alert("Program studi ini sudah dipilih. Pilih yang berbeda.")
+      toast.error("Program studi ini sudah dipilih. Silakan pilih program studi yang berbeda.")
       return
     }
 
     if (pilihanProdi.length >= 3 && editingIndex === null) {
-      alert("Maksimal 3 pilihan program studi")
+      toast.error("Maksimal 3 pilihan program studi.")
       return
     }
 

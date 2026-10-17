@@ -5,7 +5,7 @@ import { FakultasProdi } from "@/components/landing/fakultas-prodi"
 import { BiayaKuliah } from "@/components/landing/biaya-kuliah"
 import { JalurPendaftaran } from "@/components/landing/jalur-pendaftaran"
 import { JadwalPMB } from "@/components/landing/jadwal-pmb"
-import { Testimoni } from "@/components/landing/testimoni"
+import { UnduhanDokumen } from "@/components/landing/unduhan-dokumen"
 import { Berita } from "@/components/landing/berita"
 import { FAQ } from "@/components/landing/faq"
 import { CTAContact } from "@/components/landing/cta-contact"
@@ -21,7 +21,7 @@ export default function Home() {
       <BiayaKuliah />
       <JalurPendaftaran />
       <JadwalPMB />
-      <Testimoni />
+      <UnduhanDokumen />
       <Berita />
       <FAQ />
       <CTAContact />
